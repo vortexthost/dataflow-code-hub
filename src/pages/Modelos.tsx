@@ -19,7 +19,7 @@ interface Modelo {
 const Modelos = () => {
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filteredModelos, setFilteredModelos] = useState<Modelo[]>([]);
   const [expandedModel, setExpandedModel] = useState<number | null>(null);
 
@@ -370,7 +370,7 @@ token = auth.generate_token(user_id=123)`
       );
     }
     
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all') {
       filtered = filtered.filter(modelo => modelo.categoria === selectedCategory);
     }
     
@@ -423,7 +423,7 @@ token = auth.generate_token(user_id=123)`
                   <SelectValue placeholder="Filtrar por categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as categorias</SelectItem>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
                   {categorias.map((categoria) => (
                     <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
