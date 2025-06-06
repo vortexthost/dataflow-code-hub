@@ -5,6 +5,9 @@ import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, Copy } from 'lucide-react';
 
 interface Modelo {
   id: number;
@@ -16,7 +19,19 @@ interface Modelo {
 const Modelos = () => {
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [filteredModelos, setFilteredModelos] = useState<Modelo[]>([]);
+  const [expandedModel, setExpandedModel] = useState<number | null>(null);
+
+  const categorias = [
+    'Database Migration',
+    'API Integration', 
+    'File Processing',
+    'Data Validation',
+    'Monitoring',
+    'Authentication',
+    'Cloud Services'
+  ];
 
   // Dados de exemplo (simulando dados do backend)
   useEffect(() => {
@@ -216,33 +231,6 @@ class DataIntegrityValidator:
             )
             return False
         return True
-    
-    def validate_data_integrity(self, source_df: pd.DataFrame, target_df: pd.DataFrame) -> Dict:
-        """Executa validação completa"""
-        results = {
-            'valid': True,
-            'errors': [],
-            'source_checksum': '',
-            'target_checksum': '',
-            'records_validated': 0
-        }
-        
-        # Calcular checksums
-        source_data = source_df.to_string()
-        target_data = target_df.to_string()
-        
-        results['source_checksum'] = self.calculate_checksum(source_data)
-        results['target_checksum'] = self.calculate_checksum(target_data)
-        
-        # Verificar integridade
-        if results['source_checksum'] != results['target_checksum']:
-            results['valid'] = False
-            results['errors'].append("Checksums não conferem - dados podem estar corrompidos")
-        
-        results['records_validated'] = len(target_df)
-        results['errors'].extend(self.validation_errors)
-        
-        return results
 
 # Exemplo de uso
 validator = DataIntegrityValidator()
@@ -296,59 +284,75 @@ class MigrationProgressMonitor:
             self._display_progress()
             time.sleep(1)
     
-    def _display_progress(self):
-        """Exibe o progresso atual"""
-        if self.start_time:
-            elapsed = datetime.now() - self.start_time
-            percentage = (self.processed_records / self.total_records) * 100
-            
-            # Calcular ETA
-            if self.processed_records > 0:
-                rate = self.processed_records / elapsed.total_seconds()
-                remaining_records = self.total_records - self.processed_records
-                eta_seconds = remaining_records / rate if rate > 0 else 0
-                eta = f"{int(eta_seconds // 60)}m {int(eta_seconds % 60)}s"
-            else:
-                eta = "Calculando..."
-            
-            # Barra de progresso visual
-            bar_length = 30
-            filled_length = int(bar_length * percentage / 100)
-            bar = '█' * filled_length + '░' * (bar_length - filled_length)
-            
-            print(f"\\r[{bar}] {percentage:.1f}% | {self.processed_records}/{self.total_records} | ETA: {eta} | Erros: {len(self.errors)}", end='')
-    
     def finish_monitoring(self):
         """Finaliza o monitoramento"""
         self.is_running = False
         if self.start_time:
             total_time = datetime.now() - self.start_time
             print(f"\\n\\nMigração concluída em {total_time}")
-            print(f"Taxa de sucesso: {((self.total_records - len(self.errors)) / self.total_records * 100):.1f}%")
-            
-            if self.errors:
-                print(f"\\nErros encontrados: {len(self.errors)}")
-                for error in self.errors[-5:]:  # Últimos 5 erros
-                    print(f"  {error['timestamp'].strftime('%H:%M:%S')}: {error['message']}")
 
 # Exemplo de uso
-def simulate_migration():
-    monitor = MigrationProgressMonitor(10000)
-    monitor.start_monitoring()
-    
-    # Simular migração
-    for i in range(100):
-        # Simular processamento de 100 registros
-        time.sleep(0.1)
-        monitor.update_progress(100)
-        
-        # Simular erro ocasional
-        if i % 20 == 0 and i > 0:
-            monitor.update_progress(0, f"Erro de conectividade no lote {i}")
-    
-    monitor.finish_monitoring()
+monitor = MigrationProgressMonitor(10000)
+monitor.start_monitoring()`
+      },
+      {
+        id: 6,
+        titulo: "Autenticação JWT para APIs",
+        categoria: "Authentication",
+        codigo: `import jwt
+import datetime
+from functools import wraps
+from flask import request, jsonify, current_app
 
-# simulate_migration()`
+class JWTAuthenticator:
+    def __init__(self, secret_key, algorithm='HS256'):
+        self.secret_key = secret_key
+        self.algorithm = algorithm
+    
+    def generate_token(self, user_id, expires_in_hours=24):
+        """Gera um token JWT para o usuário"""
+        payload = {
+            'user_id': user_id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=expires_in_hours),
+            'iat': datetime.datetime.utcnow()
+        }
+        
+        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        return token
+    
+    def verify_token(self, token):
+        """Verifica e decodifica um token JWT"""
+        try:
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            return {'valid': True, 'user_id': payload['user_id']}
+        except jwt.ExpiredSignatureError:
+            return {'valid': False, 'error': 'Token expirado'}
+        except jwt.InvalidTokenError:
+            return {'valid': False, 'error': 'Token inválido'}
+    
+    def require_auth(self, f):
+        """Decorator para proteger rotas com autenticação"""
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            token = request.headers.get('Authorization')
+            if not token:
+                return jsonify({'error': 'Token não fornecido'}), 401
+            
+            if token.startswith('Bearer '):
+                token = token[7:]
+            
+            result = self.verify_token(token)
+            if not result['valid']:
+                return jsonify({'error': result['error']}), 401
+            
+            request.user_id = result['user_id']
+            return f(*args, **kwargs)
+        
+        return decorated_function
+
+# Uso
+auth = JWTAuthenticator('sua_chave_secreta')
+token = auth.generate_token(user_id=123)`
       }
     ];
     
@@ -357,70 +361,131 @@ def simulate_migration():
   }, []);
 
   useEffect(() => {
-    const filtered = modelos.filter(modelo =>
-      modelo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      modelo.categoria.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = modelos;
+    
+    if (searchTerm) {
+      filtered = filtered.filter(modelo =>
+        modelo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        modelo.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(modelo => modelo.categoria === selectedCategory);
+    }
+    
     setFilteredModelos(filtered);
-  }, [searchTerm, modelos]);
+  }, [searchTerm, selectedCategory, modelos]);
 
   const copyToClipboard = (codigo: string) => {
     navigator.clipboard.writeText(codigo);
   };
 
+  const toggleExpanded = (id: number) => {
+    setExpandedModel(expandedModel === id ? null : id);
+  };
+
+  const getPreviewCode = (codigo: string, maxLines: number = 8) => {
+    const lines = codigo.split('\n');
+    if (lines.length <= maxLines) return codigo;
+    return lines.slice(0, maxLines).join('\n') + '\n...';
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-background">
       <Header />
       
       <main className="container mx-auto px-4 py-16">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl font-bold text-foreground mb-4">
               Modelos de Código
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Biblioteca completa de exemplos de código para migração de dados. 
               Copie, adapte e implemente em seus projetos.
             </p>
           </div>
 
-          <div className="mb-8">
-            <Input
-              type="text"
-              placeholder="Buscar por título ou categoria..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md mx-auto block text-lg py-3"
-            />
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="flex-1">
+              <Input
+                type="text"
+                placeholder="Buscar por título ou categoria..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="text-lg py-3"
+              />
+            </div>
+            <div className="w-full md:w-64">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as categorias</SelectItem>
+                  {categorias.map((categoria) => (
+                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="grid gap-8">
+          <div className="grid lg:grid-cols-2 gap-6">
             {filteredModelos.map((modelo) => (
-              <Card key={modelo.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card key={modelo.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 bg-card border-border">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl text-blue-600 mb-2">{modelo.titulo}</CardTitle>
-                      <CardDescription className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded inline-block">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg text-primary mb-2">{modelo.titulo}</CardTitle>
+                      <Badge variant="secondary" className="bg-accent text-accent-foreground">
                         {modelo.categoria}
-                      </CardDescription>
+                      </Badge>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyToClipboard(modelo.codigo)}
-                      className="hover:bg-blue-50"
-                    >
-                      Copiar Código
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleExpanded(modelo.id)}
+                        className="hover:bg-secondary"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(modelo.codigo)}
+                        className="hover:bg-secondary"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                    <pre className="text-sm text-gray-100">
-                      <code>{modelo.codigo}</code>
+                  <div className="bg-muted rounded-lg p-4 overflow-hidden">
+                    <pre className="text-sm text-muted-foreground overflow-auto max-h-48">
+                      <code>
+                        {expandedModel === modelo.id 
+                          ? modelo.codigo 
+                          : getPreviewCode(modelo.codigo)
+                        }
+                      </code>
                     </pre>
                   </div>
+                  {modelo.codigo.split('\n').length > 8 && (
+                    <div className="mt-2 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleExpanded(modelo.id)}
+                        className="text-primary hover:text-primary/80"
+                      >
+                        {expandedModel === modelo.id ? 'Ver menos' : 'Ver código completo'}
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -428,7 +493,7 @@ def simulate_migration():
 
           {filteredModelos.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">
+              <p className="text-muted-foreground text-lg">
                 Nenhum modelo encontrado para "{searchTerm}"
               </p>
             </div>
