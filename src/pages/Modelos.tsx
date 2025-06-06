@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -93,12 +94,12 @@ def migrate_mysql_to_postgresql():
     print("Migração concluída com sucesso!")
 
 migrate_mysql_to_postgresql()`
-      },
-      {
-        id: 2,
-        titulo: "API REST para Integração de Dados",
-        categoria: "API Integration",
-        codigo: `import requests
+        },
+        {
+          id: 2,
+          titulo: "API REST para Integração de Dados",
+          categoria: "API Integration",
+          codigo: `import requests
 import json
 from datetime import datetime
 
@@ -146,12 +147,12 @@ api = DataMigrationAPI('https://api.exemplo.com', 'sua_api_key')
 raw_data = api.extract_data('usuarios')
 clean_data = api.transform_data(raw_data)
 success = api.load_data(clean_data, 'usuarios_migrados')`
-      },
-      {
-        id: 3,
-        titulo: "Migração de Arquivos CSV em Lote",
-        categoria: "File Processing",
-        codigo: `import pandas as pd
+        },
+        {
+          id: 3,
+          titulo: "Migração de Arquivos CSV em Lote",
+          categoria: "File Processing",
+          codigo: `import pandas as pd
 import os
 import logging
 from pathlib import Path
@@ -204,12 +205,12 @@ class CSVBatchMigrator:
 # Uso
 migrator = CSVBatchMigrator('/dados/origem', '/dados/destino')
 migrator.migrate_all()`
-      },
-      {
-        id: 4,
-        titulo: "Validação de Integridade de Dados",
-        categoria: "Data Validation",
-        codigo: `import hashlib
+        },
+        {
+          id: 4,
+          titulo: "Validação de Integridade de Dados",
+          categoria: "Data Validation",
+          codigo: `import hashlib
 import pandas as pd
 from typing import Dict, List
 
@@ -259,12 +260,12 @@ target_data = pd.read_csv('destino.csv')
 
 validation_result = validator.validate_data_integrity(source_data, target_data)
 print(f"Validação: {'✓ Sucesso' if validation_result['valid'] else '✗ Falhou'}")`
-      },
-      {
-        id: 5,
-        titulo: "Monitoramento de Progresso em Tempo Real",
-        categoria: "Monitoring",
-        codigo: `import time
+        },
+        {
+          id: 5,
+          titulo: "Monitoramento de Progresso em Tempo Real",
+          categoria: "Monitoring",
+          codigo: `import time
 import threading
 from datetime import datetime
 from typing import Callable
@@ -314,12 +315,12 @@ class MigrationProgressMonitor:
 # Exemplo de uso
 monitor = MigrationProgressMonitor(10000)
 monitor.start_monitoring()`
-      },
-      {
-        id: 6,
-        titulo: "Autenticação JWT para APIs",
-        categoria: "Authentication",
-        codigo: `import jwt
+        },
+        {
+          id: 6,
+          titulo: "Autenticação JWT para APIs",
+          categoria: "Authentication",
+          codigo: `import jwt
 import datetime
 from functools import wraps
 from flask import request, jsonify, current_app
@@ -373,10 +374,11 @@ class JWTAuthenticator:
 # Uso
 auth = JWTAuthenticator('sua_chave_secreta')
 token = auth.generate_token(user_id=123)`
-      }
-    ];
-    
-    setModelos(modelosExemplo);
+        }
+      ];
+      
+      setModelos(modelosExemplo);
+    }
   }, []);
 
   useEffect(() => {
