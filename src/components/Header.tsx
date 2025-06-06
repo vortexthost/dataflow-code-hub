@@ -1,0 +1,30 @@
+
+import React from 'react';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const Header = () => {
+  return (
+    <header className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 text-white">
+      <nav className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-blue-600 font-bold text-lg">D</span>
+            </div>
+            <h1 className="text-xl font-bold">DataMigrate Pro</h1>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-6">
+            <a href="/" className="hover:text-blue-200 transition-colors">Início</a>
+            <a href="/demo" className="hover:text-blue-200 transition-colors">Demo</a>
+            <a href="/modelos" className="hover:text-blue-200 transition-colors">Modelos</a>
+            <a href="/admin" className="hover:text-blue-200 transition-colors">Admin</a>
+          </div>
+        </div>
+      </nav>
+    </header>
+  );
+};
+
+export default Header;
