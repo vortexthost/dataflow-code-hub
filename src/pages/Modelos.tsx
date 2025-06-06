@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -7,7 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, Copy } from 'lucide-react';
+import { Eye, Copy, Search } from 'lucide-react';
+
+interface Categoria {
+  id: string;
+  nome: string;
+  cor: string;
+}
 
 interface Modelo {
   id: number;
@@ -18,29 +23,44 @@ interface Modelo {
 
 const Modelos = () => {
   const [modelos, setModelos] = useState<Modelo[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filteredModelos, setFilteredModelos] = useState<Modelo[]>([]);
   const [expandedModel, setExpandedModel] = useState<number | null>(null);
 
-  const categorias = [
-    'Database Migration',
-    'API Integration', 
-    'File Processing',
-    'Data Validation',
-    'Monitoring',
-    'Authentication',
-    'Cloud Services'
-  ];
-
-  // Dados de exemplo (simulando dados do backend)
+  // Carregar dados
   useEffect(() => {
-    const modelosExemplo: Modelo[] = [
-      {
-        id: 1,
-        titulo: "Conexão MySQL para PostgreSQL",
-        categoria: "Database Migration",
-        codigo: `import pymysql
+    // Carregar categorias do admin
+    const categoriasLocal = localStorage.getItem('categorias_admin');
+    if (categoriasLocal) {
+      setCategorias(JSON.parse(categoriasLocal));
+    } else {
+      // Categorias padrão caso não existam no admin
+      const categoriasDefault: Categoria[] = [
+        { id: 'db-migration', nome: 'Database Migration', cor: '#3b82f6' },
+        { id: 'api-integration', nome: 'API Integration', cor: '#10b981' },
+        { id: 'file-processing', nome: 'File Processing', cor: '#f59e0b' },
+        { id: 'data-validation', nome: 'Data Validation', cor: '#8b5cf6' },
+        { id: 'monitoring', nome: 'Monitoring', cor: '#ec4899' },
+        { id: 'authentication', nome: 'Authentication', cor: '#ef4444' },
+        { id: 'cloud-services', nome: 'Cloud Services', cor: '#06b6d4' }
+      ];
+      setCategorias(categoriasDefault);
+    }
+
+    // Carregar modelos do admin ou usar exemplos
+    const modelosLocal = localStorage.getItem('modelos_codigo');
+    if (modelosLocal) {
+      setModelos(JSON.parse(modelosLocal));
+    } else {
+      // Dados de exemplo (simulando dados do backend)
+      const modelosExemplo: Modelo[] = [
+        {
+          id: 1,
+          titulo: "Conexão MySQL para PostgreSQL",
+          categoria: "Database Migration",
+          codigo: `import pymysql
 import psycopg2
 import pandas as pd
 
@@ -357,16 +377,17 @@ token = auth.generate_token(user_id=123)`
     ];
     
     setModelos(modelosExemplo);
-    setFilteredModelos(modelosExemplo);
   }, []);
 
   useEffect(() => {
     let filtered = modelos;
     
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(modelo =>
-        modelo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        modelo.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+        modelo.titulo.toLowerCase().includes(term) ||
+        modelo.categoria.toLowerCase().includes(term) ||
+        modelo.codigo.toLowerCase().includes(term)
       );
     }
     
@@ -391,6 +412,11 @@ token = auth.generate_token(user_id=123)`
     return lines.slice(0, maxLines).join('\n') + '\n...';
   };
 
+  const getCategoriaColor = (categoriaNome: string) => {
+    const categoria = categorias.find(cat => cat.nome === categoriaNome);
+    return categoria?.cor || '#3b82f6';
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -408,13 +434,14 @@ token = auth.generate_token(user_id=123)`
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="flex-1">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <Input
                 type="text"
-                placeholder="Buscar por título ou categoria..."
+                placeholder="Buscar por título, código ou categoria..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="text-lg py-3"
+                className="text-lg py-3 pl-10"
               />
             </div>
             <div className="w-full md:w-64">
@@ -425,7 +452,15 @@ token = auth.generate_token(user_id=123)`
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
                   {categorias.map((categoria) => (
-                    <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
+                    <SelectItem key={categoria.id} value={categoria.nome}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: categoria.cor }}
+                        />
+                        {categoria.nome}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -439,7 +474,10 @@ token = auth.generate_token(user_id=123)`
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
                       <CardTitle className="text-lg text-primary mb-2">{modelo.titulo}</CardTitle>
-                      <Badge variant="secondary" className="bg-accent text-accent-foreground">
+                      <Badge 
+                        variant="secondary" 
+                        style={{ backgroundColor: `${getCategoriaColor(modelo.categoria)}20`, color: getCategoriaColor(modelo.categoria) }}
+                      >
                         {modelo.categoria}
                       </Badge>
                     </div>
@@ -494,7 +532,7 @@ token = auth.generate_token(user_id=123)`
           {filteredModelos.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground text-lg">
-                Nenhum modelo encontrado para "{searchTerm}"
+                {searchTerm ? `Nenhum modelo encontrado para "${searchTerm}"` : 'Nenhum modelo encontrado'}
               </p>
             </div>
           )}
