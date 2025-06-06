@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, Copy, Search } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Categoria {
   id: string;
@@ -29,6 +29,8 @@ const Modelos = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filteredModelos, setFilteredModelos] = useState<Modelo[]>([]);
   const [expandedModel, setExpandedModel] = useState<number | null>(null);
+
+  const { toast } = useToast();
 
   // Carregar dados
   useEffect(() => {
@@ -402,6 +404,10 @@ token = auth.generate_token(user_id=123)`
 
   const copyToClipboard = (codigo: string) => {
     navigator.clipboard.writeText(codigo);
+    toast({
+      title: "Código copiado!",
+      description: "O código foi copiado para a área de transferência.",
+    });
   };
 
   const toggleExpanded = (id: number) => {
@@ -493,19 +499,20 @@ token = auth.generate_token(user_id=123)`
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
-                        variant="outline"
+                        variant="default"
                         size="sm"
                         onClick={() => copyToClipboard(modelo.codigo)}
-                        className="hover:bg-secondary"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copiar
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-muted rounded-lg p-4 overflow-hidden">
-                    <pre className="text-sm text-muted-foreground overflow-auto max-h-48">
+                  <div className="bg-muted rounded-lg p-4">
+                    <pre className="text-sm text-muted-foreground overflow-hidden">
                       <code>
                         {expandedModel === modelo.id 
                           ? modelo.codigo 
