@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -69,6 +70,29 @@ const Admin = () => {
     { value: 'text-lg', label: 'Grande' },
     { value: 'text-xl', label: 'Muito Grande' },
     { value: 'text-2xl', label: 'Extra Grande' }
+  ];
+
+  // Configuração do React Quill
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'font': [] }],
+      [{ 'align': [] }],
+      ['blockquote', 'code-block'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      ['link', 'image', 'video'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'font', 'size',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet', 'indent',
+    'link', 'image', 'video', 'color', 'background', 'align', 'code-block'
   ];
 
   // Verificar se já está logado
@@ -331,8 +355,10 @@ const Admin = () => {
   };
 
   const getPreviewContent = (conteudo: string, maxLines: number = 3) => {
-    const lines = conteudo.split('\n');
-    if (lines.length <= maxLines) return conteudo;
+    // Remove HTML tags for preview
+    const textContent = conteudo.replace(/<[^>]*>/g, '');
+    const lines = textContent.split('\n');
+    if (lines.length <= maxLines) return textContent;
     return lines.slice(0, maxLines).join('\n') + '...';
   };
 
@@ -431,20 +457,20 @@ const Admin = () => {
           </div>
 
           {activeTab === 'tutoriais' && (
-            <div className="grid xl:grid-cols-3 gap-8">
-              {/* Formulário para adicionar/editar tutorial */}
-              <div className="xl:col-span-1">
-                <Card className="shadow-lg bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="text-xl text-primary">
-                      {editingId ? 'Editar Tutorial' : 'Adicionar Novo Tutorial'}
-                    </CardTitle>
-                    <CardDescription>
-                      {editingId ? 'Modifique os campos abaixo' : 'Preencha os campos para criar um novo tutorial'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={editingId ? handleUpdateTutorial : handleAddTutorial} className="space-y-4">
+            <div className="space-y-8">
+              {/* Formulário para adicionar/editar tutorial - Full Width */}
+              <Card className="shadow-lg bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-xl text-primary">
+                    {editingId ? 'Editar Tutorial' : 'Criar Novo Tutorial'}
+                  </CardTitle>
+                  <CardDescription>
+                    {editingId ? 'Modifique os campos abaixo para atualizar o tutorial' : 'Use o editor completo para criar um tutorial rico em conteúdo'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={editingId ? handleUpdateTutorial : handleAddTutorial} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="titulo">Título do Tutorial</Label>
                         <Input
@@ -452,7 +478,7 @@ const Admin = () => {
                           type="text"
                           value={novoTutorial.titulo}
                           onChange={(e) => setNovoTutorial(prev => ({ ...prev, titulo: e.target.value }))}
-                          placeholder="Ex: Como conectar MySQL ao PostgreSQL"
+                          placeholder="Ex: Como configurar um banco de dados PostgreSQL"
                         />
                       </div>
 
@@ -480,211 +506,160 @@ const Admin = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="cor">Cor do Título</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              id="cor"
-                              type="color"
-                              value={novoTutorial.cor}
-                              onChange={(e) => setNovoTutorial(prev => ({ ...prev, cor: e.target.value }))}
-                              className="w-12 h-10 p-1"
-                            />
-                            <Input
-                              type="text"
-                              value={novoTutorial.cor}
-                              onChange={(e) => setNovoTutorial(prev => ({ ...prev, cor: e.target.value }))}
-                              placeholder="#000000"
-                              className="flex-1"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="tamanhoFonte">Tamanho da Fonte</Label>
-                          <Select 
-                            value={novoTutorial.tamanhoFonte} 
-                            onValueChange={(value) => setNovoTutorial(prev => ({ ...prev, tamanhoFonte: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Tamanho" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {tamanhosFont.map((tamanho) => (
-                                <SelectItem key={tamanho.value} value={tamanho.value}>
-                                  {tamanho.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="imagem">URL da Imagem (opcional)</Label>
-                        <Input
-                          id="imagem"
-                          type="url"
-                          value={novoTutorial.imagem}
-                          onChange={(e) => setNovoTutorial(prev => ({ ...prev, imagem: e.target.value }))}
-                          placeholder="https://exemplo.com/imagem.png"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="conteudo">Conteúdo do Tutorial</Label>
-                        <Textarea
-                          id="conteudo"
-                          rows={12}
+                    <div className="space-y-2">
+                      <Label htmlFor="conteudo">Conteúdo do Tutorial</Label>
+                      <div className="border rounded-lg">
+                        <ReactQuill
+                          theme="snow"
                           value={novoTutorial.conteudo}
-                          onChange={(e) => setNovoTutorial(prev => ({ ...prev, conteudo: e.target.value }))}
-                          placeholder="Cole aqui o conteúdo do tutorial..."
-                          className="font-mono text-sm"
+                          onChange={(value) => setNovoTutorial(prev => ({ ...prev, conteudo: value }))}
+                          modules={quillModules}
+                          formats={quillFormats}
+                          placeholder="Escreva o conteúdo do tutorial aqui... Você pode incluir imagens, formatações de texto, códigos e muito mais!"
+                          style={{ 
+                            minHeight: '400px',
+                            backgroundColor: 'white'
+                          }}
                         />
                       </div>
-                      
-                      <div className="flex space-x-2">
+                      <p className="text-sm text-muted-foreground">
+                        Use a barra de ferramentas para formatar o texto, inserir imagens, criar listas e muito mais.
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2">
+                      {editingId && (
                         <Button 
-                          type="submit" 
-                          className="flex-1 bg-primary hover:bg-primary/90"
+                          type="button" 
+                          variant="outline" 
+                          onClick={cancelEdit}
                         >
-                          {editingId ? 'Atualizar Tutorial' : 'Adicionar Tutorial'}
+                          Cancelar
                         </Button>
-                        
-                        {editingId && (
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={cancelEdit}
-                            className="flex-1"
-                          >
-                            Cancelar
-                          </Button>
-                        )}
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
+                      )}
+                      <Button 
+                        type="submit" 
+                        className="bg-primary hover:bg-primary/90"
+                      >
+                        {editingId ? 'Atualizar Tutorial' : 'Criar Tutorial'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
 
               {/* Lista de tutoriais existentes */}
-              <div className="xl:col-span-2">
-                <Card className="shadow-lg bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="text-xl text-primary">Tutoriais Cadastrados</CardTitle>
-                    <CardDescription>
-                      Gerencie os tutoriais existentes ({tutoriais.length} total)
-                    </CardDescription>
-                    <div className="mt-4">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          type="text"
-                          placeholder="Buscar por título, conteúdo ou categoria..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
+              <Card className="shadow-lg bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-xl text-primary">Tutoriais Cadastrados</CardTitle>
+                  <CardDescription>
+                    Gerencie os tutoriais existentes ({tutoriais.length} total)
+                  </CardDescription>
+                  <div className="mt-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        type="text"
+                        placeholder="Buscar por título, conteúdo ou categoria..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {filteredTutoriais.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">
-                        {searchTerm ? `Nenhum tutorial encontrado para "${searchTerm}"` : 'Nenhum tutorial cadastrado ainda'}
-                      </p>
-                    ) : (
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Título</TableHead>
-                              <TableHead>Categoria</TableHead>
-                              <TableHead>Conteúdo</TableHead>
-                              <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {filteredTutoriais.map((tutorial) => (
-                              <TableRow key={tutorial.id}>
-                                <TableCell className="font-medium">
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {filteredTutoriais.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      {searchTerm ? `Nenhum tutorial encontrado para "${searchTerm}"` : 'Nenhum tutorial cadastrado ainda'}
+                    </p>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Título</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead>Conteúdo</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredTutoriais.map((tutorial) => (
+                            <TableRow key={tutorial.id}>
+                              <TableCell className="font-medium">
+                                <div 
+                                  style={{ color: tutorial.cor }}
+                                  className={tutorial.tamanhoFonte}
+                                >
+                                  {tutorial.titulo}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant="secondary" 
+                                  style={{ backgroundColor: `${getCategoriaColor(tutorial.categoria)}20`, color: getCategoriaColor(tutorial.categoria) }}
+                                >
+                                  {tutorial.categoria}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="bg-muted rounded p-2 text-xs max-w-xs overflow-hidden">
                                   <div 
-                                    style={{ color: tutorial.cor }}
-                                    className={tutorial.tamanhoFonte}
-                                  >
-                                    {tutorial.titulo}
-                                  </div>
-                                  {tutorial.imagem && (
-                                    <div className="mt-1">
-                                      <Image className="w-4 h-4 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge 
-                                    variant="secondary" 
-                                    style={{ backgroundColor: `${getCategoriaColor(tutorial.categoria)}20`, color: getCategoriaColor(tutorial.categoria) }}
-                                  >
-                                    {tutorial.categoria}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="bg-muted rounded p-2 text-xs font-mono max-w-xs overflow-hidden">
-                                    <pre className="whitespace-pre-wrap">
-                                      {expandedTutorial === tutorial.id 
+                                    className="prose prose-sm max-w-none"
+                                    dangerouslySetInnerHTML={{ 
+                                      __html: expandedTutorial === tutorial.id 
                                         ? tutorial.conteudo 
-                                        : getPreviewContent(tutorial.conteudo)
-                                      }
-                                    </pre>
-                                    {tutorial.conteudo.split('\n').length > 3 && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => toggleExpanded(tutorial.id)}
-                                        className="mt-1 h-6 text-xs"
-                                      >
-                                        {expandedTutorial === tutorial.id ? 'Ver menos' : 'Ver mais'}
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end space-x-1">
+                                        : getPreviewContent(tutorial.conteudo, 2) 
+                                    }}
+                                  />
+                                  {tutorial.conteudo.length > 200 && (
                                     <Button
+                                      variant="ghost"
                                       size="sm"
-                                      variant="outline"
-                                      onClick={() => handleEditTutorial(tutorial)}
-                                      className="h-8 w-8 p-0"
+                                      onClick={() => toggleExpanded(tutorial.id)}
+                                      className="mt-1 h-6 text-xs"
                                     >
-                                      <Edit className="h-4 w-4" />
+                                      {expandedTutorial === tutorial.id ? 'Ver menos' : 'Ver mais'}
                                     </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleDeleteTutorial(tutorial.id)}
-                                      className="h-8 w-8 p-0 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end space-x-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditTutorial(tutorial)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeleteTutorial(tutorial.id)}
+                                    className="h-8 w-8 p-0 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
           {activeTab === 'categorias' && (
             <div className="grid xl:grid-cols-3 gap-8">
-              {/* Formulário para adicionar/editar categoria */}
               <div className="xl:col-span-1">
                 <Card className="shadow-lg bg-card border-border">
                   <CardHeader>
@@ -756,7 +731,6 @@ const Admin = () => {
                 </Card>
               </div>
 
-              {/* Lista de categorias existentes */}
               <div className="xl:col-span-2">
                 <Card className="shadow-lg bg-card border-border">
                   <CardHeader>
