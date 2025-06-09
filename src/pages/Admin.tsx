@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -18,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Edit, Trash2, Plus, Search, Tag } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, Search, Tag, Image, Type, Palette } from 'lucide-react';
 
 interface Categoria {
   id: string;
@@ -26,31 +25,50 @@ interface Categoria {
   cor: string;
 }
 
-interface Modelo {
+interface Tutorial {
   id: number;
   titulo: string;
-  codigo: string;
+  conteudo: string;
   categoria: string;
+  cor?: string;
+  tamanhoFonte?: string;
+  imagem?: string;
 }
 
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginData, setLoginData] = useState({ usuario: '', senha: '' });
-  const [modelos, setModelos] = useState<Modelo[]>([]);
+  const [tutoriais, setTutoriais] = useState<Tutorial[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [novoModelo, setNovoModelo] = useState({ titulo: '', codigo: '', categoria: '' });
+  const [novoTutorial, setNovoTutorial] = useState({ 
+    titulo: '', 
+    conteudo: '', 
+    categoria: '', 
+    cor: '#000000', 
+    tamanhoFonte: 'text-sm',
+    imagem: ''
+  });
   const [novaCategoria, setNovaCategoria] = useState({ nome: '', cor: '#3b82f6' });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingCategoriaId, setEditingCategoriaId] = useState<string | null>(null);
-  const [expandedModel, setExpandedModel] = useState<number | null>(null);
+  const [expandedTutorial, setExpandedTutorial] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredModelos, setFilteredModelos] = useState<Modelo[]>([]);
-  const [activeTab, setActiveTab] = useState<'modelos' | 'categorias'>('modelos');
+  const [filteredTutoriais, setFilteredTutoriais] = useState<Tutorial[]>([]);
+  const [activeTab, setActiveTab] = useState<'tutoriais' | 'categorias'>('tutoriais');
   const { toast } = useToast();
 
   const coresDisponiveis = [
     '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', 
     '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+  ];
+
+  const tamanhosFont = [
+    { value: 'text-xs', label: 'Muito Pequeno' },
+    { value: 'text-sm', label: 'Pequeno' },
+    { value: 'text-base', label: 'Normal' },
+    { value: 'text-lg', label: 'Grande' },
+    { value: 'text-xl', label: 'Muito Grande' },
+    { value: 'text-2xl', label: 'Extra Grande' }
   ];
 
   // Verificar se já está logado
@@ -62,21 +80,21 @@ const Admin = () => {
     }
   }, []);
 
-  // Filtrar modelos baseado na busca
+  // Filtrar tutoriais baseado na busca
   useEffect(() => {
-    let filtered = modelos;
+    let filtered = tutoriais;
     
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      filtered = modelos.filter(modelo =>
-        modelo.titulo.toLowerCase().includes(term) ||
-        modelo.codigo.toLowerCase().includes(term) ||
-        modelo.categoria.toLowerCase().includes(term)
+      filtered = tutoriais.filter(tutorial =>
+        tutorial.titulo.toLowerCase().includes(term) ||
+        tutorial.conteudo.toLowerCase().includes(term) ||
+        tutorial.categoria.toLowerCase().includes(term)
       );
     }
     
-    setFilteredModelos(filtered);
-  }, [searchTerm, modelos]);
+    setFilteredTutoriais(filtered);
+  }, [searchTerm, tutoriais]);
 
   const loadData = () => {
     // Carregar categorias
@@ -98,10 +116,18 @@ const Admin = () => {
       localStorage.setItem('categorias_admin', JSON.stringify(categoriasDefault));
     }
 
-    // Carregar modelos
-    const modelosLocal = localStorage.getItem('modelos_codigo');
-    if (modelosLocal) {
-      setModelos(JSON.parse(modelosLocal));
+    // Carregar tutoriais
+    const tutoriaisLocal = localStorage.getItem('modelos_codigo');
+    if (tutoriaisLocal) {
+      const data = JSON.parse(tutoriaisLocal);
+      const tutoriaisConvertidos = data.map((item: any) => ({
+        ...item,
+        conteudo: item.codigo || item.conteudo || '',
+        cor: item.cor || '#000000',
+        tamanhoFonte: item.tamanhoFonte || 'text-sm',
+        imagem: item.imagem || ''
+      }));
+      setTutoriais(tutoriaisConvertidos);
     }
   };
 
@@ -131,9 +157,9 @@ const Admin = () => {
     setLoginData({ usuario: '', senha: '' });
   };
 
-  const saveModelos = (novosModelos: Modelo[]) => {
-    localStorage.setItem('modelos_codigo', JSON.stringify(novosModelos));
-    setModelos(novosModelos);
+  const saveTutoriais = (novosTutoriais: Tutorial[]) => {
+    localStorage.setItem('modelos_codigo', JSON.stringify(novosTutoriais));
+    setTutoriais(novosTutoriais);
   };
 
   const saveCategorias = (novasCategorias: Categoria[]) => {
@@ -206,83 +232,92 @@ const Admin = () => {
     });
   };
 
-  const handleAddModelo = (e: React.FormEvent) => {
+  const handleAddTutorial = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!novoModelo.titulo.trim() || !novoModelo.codigo.trim() || !novoModelo.categoria.trim()) {
+    if (!novoTutorial.titulo.trim() || !novoTutorial.conteudo.trim() || !novoTutorial.categoria.trim()) {
       toast({
         title: "Erro",
-        description: "Título, categoria e código são obrigatórios.",
+        description: "Título, categoria e conteúdo são obrigatórios.",
         variant: "destructive",
       });
       return;
     }
 
-    const novoId = Math.max(...modelos.map(m => m.id), 0) + 1;
-    const modeloParaAdicionar = {
+    const novoId = Math.max(...tutoriais.map(m => m.id), 0) + 1;
+    const tutorialParaAdicionar = {
       id: novoId,
-      titulo: novoModelo.titulo,
-      codigo: novoModelo.codigo,
-      categoria: novoModelo.categoria
+      titulo: novoTutorial.titulo,
+      conteudo: novoTutorial.conteudo,
+      categoria: novoTutorial.categoria,
+      cor: novoTutorial.cor,
+      tamanhoFonte: novoTutorial.tamanhoFonte,
+      imagem: novoTutorial.imagem
     };
 
-    const novosModelos = [...modelos, modeloParaAdicionar];
-    saveModelos(novosModelos);
-    setNovoModelo({ titulo: '', codigo: '', categoria: '' });
+    const novosTutoriais = [...tutoriais, tutorialParaAdicionar];
+    saveTutoriais(novosTutoriais);
+    setNovoTutorial({ titulo: '', conteudo: '', categoria: '', cor: '#000000', tamanhoFonte: 'text-sm', imagem: '' });
     
     toast({
-      title: "Modelo adicionado!",
-      description: "Novo modelo de código foi criado com sucesso.",
+      title: "Tutorial adicionado!",
+      description: "Novo tutorial foi criado com sucesso.",
     });
   };
 
-  const handleEditModelo = (modelo: Modelo) => {
-    setNovoModelo({ 
-      titulo: modelo.titulo, 
-      codigo: modelo.codigo, 
-      categoria: modelo.categoria 
+  const handleEditTutorial = (tutorial: Tutorial) => {
+    setNovoTutorial({ 
+      titulo: tutorial.titulo, 
+      conteudo: tutorial.conteudo, 
+      categoria: tutorial.categoria,
+      cor: tutorial.cor || '#000000',
+      tamanhoFonte: tutorial.tamanhoFonte || 'text-sm',
+      imagem: tutorial.imagem || ''
     });
-    setEditingId(modelo.id);
+    setEditingId(tutorial.id);
   };
 
-  const handleUpdateModelo = (e: React.FormEvent) => {
+  const handleUpdateTutorial = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!editingId) return;
 
-    const novosModelos = modelos.map(modelo =>
-      modelo.id === editingId
+    const novosTutoriais = tutoriais.map(tutorial =>
+      tutorial.id === editingId
         ? { 
-            ...modelo, 
-            titulo: novoModelo.titulo, 
-            codigo: novoModelo.codigo,
-            categoria: novoModelo.categoria
+            ...tutorial, 
+            titulo: novoTutorial.titulo, 
+            conteudo: novoTutorial.conteudo,
+            categoria: novoTutorial.categoria,
+            cor: novoTutorial.cor,
+            tamanhoFonte: novoTutorial.tamanhoFonte,
+            imagem: novoTutorial.imagem
           }
-        : modelo
+        : tutorial
     );
 
-    saveModelos(novosModelos);
-    setNovoModelo({ titulo: '', codigo: '', categoria: '' });
+    saveTutoriais(novosTutoriais);
+    setNovoTutorial({ titulo: '', conteudo: '', categoria: '', cor: '#000000', tamanhoFonte: 'text-sm', imagem: '' });
     setEditingId(null);
     
     toast({
-      title: "Modelo atualizado!",
+      title: "Tutorial atualizado!",
       description: "As alterações foram salvas com sucesso.",
     });
   };
 
-  const handleDeleteModelo = (id: number) => {
-    const novosModelos = modelos.filter(modelo => modelo.id !== id);
-    saveModelos(novosModelos);
+  const handleDeleteTutorial = (id: number) => {
+    const novosTutoriais = tutoriais.filter(tutorial => tutorial.id !== id);
+    saveTutoriais(novosTutoriais);
     
     toast({
-      title: "Modelo removido!",
-      description: "O modelo foi excluído com sucesso.",
+      title: "Tutorial removido!",
+      description: "O tutorial foi excluído com sucesso.",
     });
   };
 
   const cancelEdit = () => {
-    setNovoModelo({ titulo: '', codigo: '', categoria: '' });
+    setNovoTutorial({ titulo: '', conteudo: '', categoria: '', cor: '#000000', tamanhoFonte: 'text-sm', imagem: '' });
     setEditingId(null);
   };
 
@@ -292,12 +327,12 @@ const Admin = () => {
   };
 
   const toggleExpanded = (id: number) => {
-    setExpandedModel(expandedModel === id ? null : id);
+    setExpandedTutorial(expandedTutorial === id ? null : id);
   };
 
-  const getPreviewCode = (codigo: string, maxLines: number = 3) => {
-    const lines = codigo.split('\n');
-    if (lines.length <= maxLines) return codigo;
+  const getPreviewContent = (conteudo: string, maxLines: number = 3) => {
+    const lines = conteudo.split('\n');
+    if (lines.length <= maxLines) return conteudo;
     return lines.slice(0, maxLines).join('\n') + '...';
   };
 
@@ -378,12 +413,12 @@ const Admin = () => {
           {/* Tabs Navigation */}
           <div className="flex space-x-4 mb-8">
             <Button
-              onClick={() => setActiveTab('modelos')}
-              variant={activeTab === 'modelos' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('tutoriais')}
+              variant={activeTab === 'tutoriais' ? 'default' : 'outline'}
               className="flex items-center gap-2"
             >
-              <Search className="w-4 h-4" />
-              Modelos
+              <Type className="w-4 h-4" />
+              Tutoriais
             </Button>
             <Button
               onClick={() => setActiveTab('categorias')}
@@ -395,37 +430,37 @@ const Admin = () => {
             </Button>
           </div>
 
-          {activeTab === 'modelos' && (
+          {activeTab === 'tutoriais' && (
             <div className="grid xl:grid-cols-3 gap-8">
-              {/* Formulário para adicionar/editar modelo */}
+              {/* Formulário para adicionar/editar tutorial */}
               <div className="xl:col-span-1">
                 <Card className="shadow-lg bg-card border-border">
                   <CardHeader>
                     <CardTitle className="text-xl text-primary">
-                      {editingId ? 'Editar Modelo' : 'Adicionar Novo Modelo'}
+                      {editingId ? 'Editar Tutorial' : 'Adicionar Novo Tutorial'}
                     </CardTitle>
                     <CardDescription>
-                      {editingId ? 'Modifique os campos abaixo' : 'Preencha os campos para criar um novo modelo de código'}
+                      {editingId ? 'Modifique os campos abaixo' : 'Preencha os campos para criar um novo tutorial'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={editingId ? handleUpdateModelo : handleAddModelo} className="space-y-4">
+                    <form onSubmit={editingId ? handleUpdateTutorial : handleAddTutorial} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="titulo">Título do Modelo</Label>
+                        <Label htmlFor="titulo">Título do Tutorial</Label>
                         <Input
                           id="titulo"
                           type="text"
-                          value={novoModelo.titulo}
-                          onChange={(e) => setNovoModelo(prev => ({ ...prev, titulo: e.target.value }))}
-                          placeholder="Ex: Conexão MySQL para PostgreSQL"
+                          value={novoTutorial.titulo}
+                          onChange={(e) => setNovoTutorial(prev => ({ ...prev, titulo: e.target.value }))}
+                          placeholder="Ex: Como conectar MySQL ao PostgreSQL"
                         />
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="categoria">Categoria</Label>
                         <Select 
-                          value={novoModelo.categoria} 
-                          onValueChange={(value) => setNovoModelo(prev => ({ ...prev, categoria: value }))}
+                          value={novoTutorial.categoria} 
+                          onValueChange={(value) => setNovoTutorial(prev => ({ ...prev, categoria: value }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma categoria" />
@@ -445,15 +480,67 @@ const Admin = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="cor">Cor do Título</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="cor"
+                              type="color"
+                              value={novoTutorial.cor}
+                              onChange={(e) => setNovoTutorial(prev => ({ ...prev, cor: e.target.value }))}
+                              className="w-12 h-10 p-1"
+                            />
+                            <Input
+                              type="text"
+                              value={novoTutorial.cor}
+                              onChange={(e) => setNovoTutorial(prev => ({ ...prev, cor: e.target.value }))}
+                              placeholder="#000000"
+                              className="flex-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="tamanhoFonte">Tamanho da Fonte</Label>
+                          <Select 
+                            value={novoTutorial.tamanhoFonte} 
+                            onValueChange={(value) => setNovoTutorial(prev => ({ ...prev, tamanhoFonte: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Tamanho" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tamanhosFont.map((tamanho) => (
+                                <SelectItem key={tamanho.value} value={tamanho.value}>
+                                  {tamanho.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="imagem">URL da Imagem (opcional)</Label>
+                        <Input
+                          id="imagem"
+                          type="url"
+                          value={novoTutorial.imagem}
+                          onChange={(e) => setNovoTutorial(prev => ({ ...prev, imagem: e.target.value }))}
+                          placeholder="https://exemplo.com/imagem.png"
+                        />
+                      </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="codigo">Código Python</Label>
+                        <Label htmlFor="conteudo">Conteúdo do Tutorial</Label>
                         <Textarea
-                          id="codigo"
+                          id="conteudo"
                           rows={12}
-                          value={novoModelo.codigo}
-                          onChange={(e) => setNovoModelo(prev => ({ ...prev, codigo: e.target.value }))}
-                          placeholder="Cole aqui o código Python..."
+                          value={novoTutorial.conteudo}
+                          onChange={(e) => setNovoTutorial(prev => ({ ...prev, conteudo: e.target.value }))}
+                          placeholder="Cole aqui o conteúdo do tutorial..."
                           className="font-mono text-sm"
                         />
                       </div>
@@ -463,7 +550,7 @@ const Admin = () => {
                           type="submit" 
                           className="flex-1 bg-primary hover:bg-primary/90"
                         >
-                          {editingId ? 'Atualizar Modelo' : 'Adicionar Modelo'}
+                          {editingId ? 'Atualizar Tutorial' : 'Adicionar Tutorial'}
                         </Button>
                         
                         {editingId && (
@@ -482,20 +569,20 @@ const Admin = () => {
                 </Card>
               </div>
 
-              {/* Lista de modelos existentes */}
+              {/* Lista de tutoriais existentes */}
               <div className="xl:col-span-2">
                 <Card className="shadow-lg bg-card border-border">
                   <CardHeader>
-                    <CardTitle className="text-xl text-primary">Modelos Cadastrados</CardTitle>
+                    <CardTitle className="text-xl text-primary">Tutoriais Cadastrados</CardTitle>
                     <CardDescription>
-                      Gerencie os modelos de código existentes ({modelos.length} total)
+                      Gerencie os tutoriais existentes ({tutoriais.length} total)
                     </CardDescription>
                     <div className="mt-4">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                         <Input
                           type="text"
-                          placeholder="Buscar por título, código ou categoria..."
+                          placeholder="Buscar por título, conteúdo ou categoria..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10"
@@ -504,9 +591,9 @@ const Admin = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {filteredModelos.length === 0 ? (
+                    {filteredTutoriais.length === 0 ? (
                       <p className="text-muted-foreground text-center py-8">
-                        {searchTerm ? `Nenhum modelo encontrado para "${searchTerm}"` : 'Nenhum modelo cadastrado ainda'}
+                        {searchTerm ? `Nenhum tutorial encontrado para "${searchTerm}"` : 'Nenhum tutorial cadastrado ainda'}
                       </p>
                     ) : (
                       <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -515,40 +602,50 @@ const Admin = () => {
                             <TableRow>
                               <TableHead>Título</TableHead>
                               <TableHead>Categoria</TableHead>
-                              <TableHead>Código</TableHead>
+                              <TableHead>Conteúdo</TableHead>
                               <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {filteredModelos.map((modelo) => (
-                              <TableRow key={modelo.id}>
+                            {filteredTutoriais.map((tutorial) => (
+                              <TableRow key={tutorial.id}>
                                 <TableCell className="font-medium">
-                                  {modelo.titulo}
+                                  <div 
+                                    style={{ color: tutorial.cor }}
+                                    className={tutorial.tamanhoFonte}
+                                  >
+                                    {tutorial.titulo}
+                                  </div>
+                                  {tutorial.imagem && (
+                                    <div className="mt-1">
+                                      <Image className="w-4 h-4 text-muted-foreground" />
+                                    </div>
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   <Badge 
                                     variant="secondary" 
-                                    style={{ backgroundColor: `${getCategoriaColor(modelo.categoria)}20`, color: getCategoriaColor(modelo.categoria) }}
+                                    style={{ backgroundColor: `${getCategoriaColor(tutorial.categoria)}20`, color: getCategoriaColor(tutorial.categoria) }}
                                   >
-                                    {modelo.categoria}
+                                    {tutorial.categoria}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
                                   <div className="bg-muted rounded p-2 text-xs font-mono max-w-xs overflow-hidden">
                                     <pre className="whitespace-pre-wrap">
-                                      {expandedModel === modelo.id 
-                                        ? modelo.codigo 
-                                        : getPreviewCode(modelo.codigo)
+                                      {expandedTutorial === tutorial.id 
+                                        ? tutorial.conteudo 
+                                        : getPreviewContent(tutorial.conteudo)
                                       }
                                     </pre>
-                                    {modelo.codigo.split('\n').length > 3 && (
+                                    {tutorial.conteudo.split('\n').length > 3 && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => toggleExpanded(modelo.id)}
+                                        onClick={() => toggleExpanded(tutorial.id)}
                                         className="mt-1 h-6 text-xs"
                                       >
-                                        {expandedModel === modelo.id ? 'Ver menos' : 'Ver mais'}
+                                        {expandedTutorial === tutorial.id ? 'Ver menos' : 'Ver mais'}
                                       </Button>
                                     )}
                                   </div>
@@ -558,7 +655,7 @@ const Admin = () => {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => handleEditModelo(modelo)}
+                                      onClick={() => handleEditTutorial(tutorial)}
                                       className="h-8 w-8 p-0"
                                     >
                                       <Edit className="h-4 w-4" />
@@ -566,7 +663,7 @@ const Admin = () => {
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      onClick={() => handleDeleteModelo(modelo.id)}
+                                      onClick={() => handleDeleteTutorial(tutorial.id)}
                                       className="h-8 w-8 p-0 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -595,7 +692,7 @@ const Admin = () => {
                       {editingCategoriaId ? 'Editar Categoria' : 'Adicionar Nova Categoria'}
                     </CardTitle>
                     <CardDescription>
-                      {editingCategoriaId ? 'Modifique os campos abaixo' : 'Crie uma nova categoria para organizar os modelos'}
+                      {editingCategoriaId ? 'Modifique os campos abaixo' : 'Crie uma nova categoria para organizar os tutoriais'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -665,7 +762,7 @@ const Admin = () => {
                   <CardHeader>
                     <CardTitle className="text-xl text-primary">Categorias Cadastradas</CardTitle>
                     <CardDescription>
-                      Gerencie as categorias dos modelos ({categorias.length} total)
+                      Gerencie as categorias dos tutoriais ({categorias.length} total)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

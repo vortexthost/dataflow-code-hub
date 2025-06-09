@@ -18,7 +18,7 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-6">
             <a href="/" className="text-muted-foreground hover:text-primary transition-colors">Início</a>
             <a href="/demo" className="text-muted-foreground hover:text-primary transition-colors">Demo</a>
-            <a href="/modelos" className="text-muted-foreground hover:text-primary transition-colors">Modelos</a>
+            <a href="/tutoriais" className="text-muted-foreground hover:text-primary transition-colors">Tutoriais</a>
             <a href="/admin" className="text-muted-foreground hover:text-primary transition-colors">Admin</a>
           </div>
         </div>
