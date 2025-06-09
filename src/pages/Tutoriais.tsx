@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -5,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Copy, Check, Filter, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Search, Eye, Filter, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -37,7 +39,6 @@ const Tutoriais = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filteredTutoriais, setFilteredTutoriais] = useState<Tutorial[]>([]);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -88,31 +89,6 @@ const Tutoriais = () => {
     }
 
     setFilteredTutoriais(filtered);
-  };
-
-  const handleCopy = async (tutorial: Tutorial) => {
-    try {
-      // Criar um elemento temporário para extrair apenas o texto do HTML
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = tutorial.conteudo;
-      const textContent = tempDiv.textContent || tempDiv.innerText || '';
-      
-      await navigator.clipboard.writeText(textContent);
-      setCopiedId(tutorial.id);
-      
-      toast({
-        title: "Conteúdo copiado!",
-        description: "O conteúdo do tutorial foi copiado para a área de transferência.",
-      });
-
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      toast({
-        title: "Erro ao copiar",
-        description: "Não foi possível copiar o conteúdo.",
-        variant: "destructive",
-      });
-    }
   };
 
   const getCategoriaColor = (categoriaNome: string) => {
@@ -260,34 +236,30 @@ const Tutoriais = () => {
                         </div>
                       </div>
                       
-                      <Button
-                        onClick={() => handleCopy(tutorial)}
-                        className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-                        size="sm"
-                      >
-                        {copiedId === tutorial.id ? (
-                          <>
-                            <Check className="w-4 h-4 mr-2" />
-                            Copiado!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copiar
-                          </>
-                        )}
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
+                            size="sm"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Visualizar
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="text-xl mb-4">{tutorial.titulo}</DialogTitle>
+                          </DialogHeader>
+                          <div className="prose max-w-none">
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: tutorial.conteudo }}
+                              className="text-sm"
+                            />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardHeader>
-                  
-                  <CardContent>
-                    <div className="bg-muted rounded-lg p-4 prose max-w-none">
-                      <div 
-                        dangerouslySetInnerHTML={{ __html: tutorial.conteudo }}
-                        className="text-sm"
-                      />
-                    </div>
-                  </CardContent>
                 </Card>
               ))}
             </div>
