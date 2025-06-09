@@ -2,6 +2,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Header = () => {
   return (
@@ -20,6 +21,7 @@ const Header = () => {
             <a href="/demo" className="text-muted-foreground hover:text-primary transition-colors">Demo</a>
             <a href="/tutoriais" className="text-muted-foreground hover:text-primary transition-colors">Tutoriais</a>
             <a href="/admin" className="text-muted-foreground hover:text-primary transition-colors">Admin</a>
+            <ThemeToggle />
           </div>
         </div>
       </nav>

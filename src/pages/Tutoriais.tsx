@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -93,7 +92,12 @@ const Tutoriais = () => {
 
   const handleCopy = async (tutorial: Tutorial) => {
     try {
-      await navigator.clipboard.writeText(tutorial.conteudo);
+      // Criar um elemento temporário para extrair apenas o texto do HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = tutorial.conteudo;
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      
+      await navigator.clipboard.writeText(textContent);
       setCopiedId(tutorial.id);
       
       toast({
@@ -277,20 +281,11 @@ const Tutoriais = () => {
                   </CardHeader>
                   
                   <CardContent>
-                    {tutorial.imagem && (
-                      <div className="mb-4">
-                        <img 
-                          src={tutorial.imagem} 
-                          alt={tutorial.titulo}
-                          className="w-full h-48 object-cover rounded-lg border"
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="bg-muted rounded-lg p-4">
-                      <pre className="whitespace-pre-wrap text-sm font-mono">
-                        {tutorial.conteudo}
-                      </pre>
+                    <div className="bg-muted rounded-lg p-4 prose max-w-none">
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: tutorial.conteudo }}
+                        className="text-sm"
+                      />
                     </div>
                   </CardContent>
                 </Card>
