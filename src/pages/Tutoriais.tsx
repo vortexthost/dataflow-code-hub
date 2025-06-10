@@ -1,270 +1,178 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Search, Eye, Filter, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-interface Categoria {
-  id: string;
-  nome: string;
-  cor: string;
-}
-
-interface Tutorial {
-  id: number;
-  titulo: string;
-  conteudo: string;
-  categoria: string;
-  cor?: string;
-  tamanhoFonte?: string;
-  imagem?: string;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, Eye, Calendar } from 'lucide-react';
+import { useTutorials } from '@/hooks/useTutorials';
+import { useCategories } from '@/hooks/useCategories';
 
 const Tutoriais = () => {
-  const [tutoriais, setTutoriais] = useState<Tutorial[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [filteredTutoriais, setFilteredTutoriais] = useState<Tutorial[]>([]);
-  const { toast } = useToast();
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedTutorial, setSelectedTutorial] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const { data: tutoriais = [], isLoading: loadingTutoriais } = useTutorials();
+  const { data: categorias = [], isLoading: loadingCategorias } = useCategories();
 
-  useEffect(() => {
-    filterTutoriais();
-  }, [searchTerm, selectedCategory, tutoriais]);
+  const filteredTutoriais = tutoriais.filter(tutorial => {
+    const matchesSearch = tutorial.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         tutorial.conteudo.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === '' || tutorial.categoria_id === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const loadData = () => {
-    // Carregar categorias
-    const categoriasLocal = localStorage.getItem('categorias_admin');
-    if (categoriasLocal) {
-      setCategorias(JSON.parse(categoriasLocal));
-    }
-
-    // Carregar tutoriais (antigos modelos)
-    const tutoriaisLocal = localStorage.getItem('modelos_codigo');
-    if (tutoriaisLocal) {
-      const data = JSON.parse(tutoriaisLocal);
-      // Converter modelos antigos para formato de tutorial
-      const tutoriaisConvertidos = data.map((item: any) => ({
-        ...item,
-        conteudo: item.codigo || item.conteudo || '',
-        cor: item.cor || '#000000',
-        tamanhoFonte: item.tamanhoFonte || 'text-sm',
-        imagem: item.imagem || ''
-      }));
-      setTutoriais(tutoriaisConvertidos);
-    }
+  const handleViewTutorial = (tutorial: any) => {
+    setSelectedTutorial(tutorial);
+    setIsDialogOpen(true);
   };
 
-  const filterTutoriais = () => {
-    let filtered = tutoriais;
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(tutorial => tutorial.categoria === selectedCategory);
-    }
-
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(tutorial =>
-        tutorial.titulo.toLowerCase().includes(term) ||
-        tutorial.conteudo.toLowerCase().includes(term) ||
-        tutorial.categoria.toLowerCase().includes(term)
-      );
-    }
-
-    setFilteredTutoriais(filtered);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const getCategoriaColor = (categoriaNome: string) => {
-    const categoria = categorias.find(cat => cat.nome === categoriaNome);
-    return categoria?.cor || '#3b82f6';
-  };
-
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('all');
-  };
-
-  const hasActiveFilters = searchTerm.trim() !== '' || selectedCategory !== 'all';
+  if (loadingTutoriais || loadingCategorias) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Carregando tutoriais...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">
-              Tutoriais de Migração de Dados
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Explore nossa biblioteca de tutoriais práticos para migração de dados. 
-              Encontre soluções prontas para usar em seus projetos.
-            </p>
+      <main className="container mx-auto px-4 py-8 mt-16">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+            Tutoriais e Modelos
+          </h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Aprenda com nossos guias práticos e modelos prontos para migração de dados
+          </p>
+        </div>
+
+        {/* Filtros */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Buscar tutoriais..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-md text-white"
+            >
+              <option value="">Todas as categorias</option>
+              {categorias.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>
+                  {categoria.nome}
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
 
-          {/* Filtros e Busca */}
-          <Card className="mb-8 shadow-lg bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-xl text-primary">Buscar Tutoriais</CardTitle>
-              <CardDescription className="text-card-foreground/70">
-                Use os filtros abaixo para encontrar o tutorial que você precisa
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    type="text"
-                    placeholder="Buscar por título, conteúdo ou categoria..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="md:w-64">
-                    <SelectValue placeholder="Todas as categorias" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categorias.map((categoria) => (
-                      <SelectItem key={categoria.id} value={categoria.nome}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: categoria.cor }}
-                          />
-                          {categoria.nome}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {hasActiveFilters && (
-                  <Button
-                    onClick={clearFilters}
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              {hasActiveFilters && (
-                <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
-                  <Filter className="w-4 h-4" />
-                  <span>
-                    {filteredTutoriais.length} tutorial(is) encontrado(s)
-                    {searchTerm && ` para "${searchTerm}"`}
-                    {selectedCategory !== 'all' && ` na categoria "${selectedCategory}"`}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Lista de Tutoriais em 2 colunas */}
-          {filteredTutoriais.length === 0 ? (
-            <Card className="text-center py-12 shadow-lg bg-card border-border">
-              <CardContent>
-                <div className="text-muted-foreground">
-                  {hasActiveFilters ? (
-                    <>
-                      <Search className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-xl font-semibold mb-2 text-card-foreground">Nenhum tutorial encontrado</h3>
-                      <p className="text-card-foreground/70">Tente ajustar os filtros de busca ou limpar os filtros ativos.</p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-xl font-semibold mb-2 text-card-foreground">Nenhum tutorial disponível</h3>
-                      <p className="text-card-foreground/70">Em breve adicionaremos tutoriais aqui.</p>
-                    </>
+        {/* Lista de Tutoriais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTutoriais.map((tutorial) => (
+            <Card key={tutorial.id} className="bg-gray-800 border-gray-700 hover:border-blue-500 transition-colors">
+              <CardHeader>
+                <div className="flex justify-between items-start mb-2">
+                  <CardTitle className="text-lg text-white line-clamp-2">
+                    {tutorial.titulo}
+                  </CardTitle>
+                  {tutorial.categorias && (
+                    <Badge 
+                      style={{ backgroundColor: tutorial.categorias.cor }}
+                      className="text-white"
+                    >
+                      {tutorial.categorias.nome}
+                    </Badge>
                   )}
                 </div>
+                <div className="flex items-center text-sm text-gray-400">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  {formatDate(tutorial.created_at)}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-300 text-sm mb-4 line-clamp-3">
+                  {tutorial.conteudo.replace(/<[^>]*>/g, '').substring(0, 150)}...
+                </p>
+                <Button 
+                  onClick={() => handleViewTutorial(tutorial)}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Ver Tutorial
+                </Button>
               </CardContent>
             </Card>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {filteredTutoriais.map((tutorial) => (
-                <Card key={tutorial.id} className="shadow-lg bg-card border-border hover:shadow-xl transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <CardTitle 
-                          className="text-xl mb-2 text-card-foreground"
-                          style={{ 
-                            fontSize: tutorial.tamanhoFonte === 'text-lg' ? '1.125rem' : 
-                                     tutorial.tamanhoFonte === 'text-xl' ? '1.25rem' : 
-                                     tutorial.tamanhoFonte === 'text-2xl' ? '1.5rem' : '1rem'
-                          }}
-                        >
-                          {tutorial.titulo}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="secondary"
-                            style={{ 
-                              backgroundColor: `${getCategoriaColor(tutorial.categoria)}20`, 
-                              color: getCategoriaColor(tutorial.categoria) 
-                            }}
-                          >
-                            {tutorial.categoria}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md"
-                            size="sm"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Visualizar
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle className="text-xl mb-4 text-foreground">{tutorial.titulo}</DialogTitle>
-                          </DialogHeader>
-                          <div className="prose max-w-none prose-invert">
-                            <div 
-                              dangerouslySetInnerHTML={{ __html: tutorial.conteudo }}
-                              className="text-sm text-foreground"
-                            />
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+          ))}
+        </div>
+
+        {filteredTutoriais.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-lg">
+              Nenhum tutorial encontrado com os filtros aplicados.
+            </p>
+          </div>
+        )}
+      </main>
+
+      {/* Dialog para visualizar tutorial */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white text-xl">
+              {selectedTutorial?.titulo}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTutorial && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                {selectedTutorial.categorias && (
+                  <Badge 
+                    style={{ backgroundColor: selectedTutorial.categorias.cor }}
+                    className="text-white"
+                  >
+                    {selectedTutorial.categorias.nome}
+                  </Badge>
+                )}
+                <span className="text-gray-400 text-sm">
+                  {formatDate(selectedTutorial.created_at)}
+                </span>
+              </div>
+              <div 
+                className="text-gray-300 prose prose-invert max-w-none"
+                style={{ 
+                  color: selectedTutorial.cor,
+                  fontSize: selectedTutorial.tamanho_fonte === 'text-lg' ? '1.125rem' : 
+                           selectedTutorial.tamanho_fonte === 'text-xl' ? '1.25rem' : '0.875rem'
+                }}
+                dangerouslySetInnerHTML={{ __html: selectedTutorial.conteudo }}
+              />
             </div>
           )}
-        </div>
-      </main>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

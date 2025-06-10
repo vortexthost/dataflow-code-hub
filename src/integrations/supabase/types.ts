@@ -9,7 +9,205 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categorias: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      config_email: {
+        Row: {
+          assunto: string
+          conteudo: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          assunto?: string
+          conteudo?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          assunto?: string
+          conteudo?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      demos: {
+        Row: {
+          created_at: string
+          email: string
+          empresa: string
+          id: string
+          mensagem: string | null
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          empresa: string
+          id?: string
+          mensagem?: string | null
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          empresa?: string
+          id?: string
+          mensagem?: string | null
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          prioridade: string
+          respondido_em: string | null
+          resposta: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          prioridade?: string
+          respondido_em?: string | null
+          resposta?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          prioridade?: string
+          respondido_em?: string | null
+          resposta?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios_sistema"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutoriais: {
+        Row: {
+          categoria_id: string | null
+          conteudo: string
+          cor: string | null
+          created_at: string
+          id: string
+          imagem: string | null
+          tamanho_fonte: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria_id?: string | null
+          conteudo: string
+          cor?: string | null
+          created_at?: string
+          id?: string
+          imagem?: string | null
+          tamanho_fonte?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: string | null
+          conteudo?: string
+          cor?: string | null
+          created_at?: string
+          id?: string
+          imagem?: string | null
+          tamanho_fonte?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutoriais_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios_sistema: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          senha: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          senha: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          senha?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

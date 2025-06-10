@@ -3,328 +3,247 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Play, ExternalLink, Mail } from 'lucide-react';
-
-interface DemoRegistration {
-  id: string;
-  nome: string;
-  email: string;
-  empresa: string;
-  objetivo: string;
-  timestamp: string;
-}
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, Send, Database, Shield, Zap } from 'lucide-react';
+import { useCreateDemo } from '@/hooks/useDemos';
+import { toast } from 'sonner';
 
 const Demo = () => {
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
     empresa: '',
-    objetivo: ''
+    telefone: '',
+    mensagem: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(false);
-  const { toast } = useToast();
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const saveRegistration = (registration: DemoRegistration) => {
-    const existingRegistrations = JSON.parse(localStorage.getItem('demo_registrations') || '[]');
-    const newRegistrations = [...existingRegistrations, registration];
-    localStorage.setItem('demo_registrations', JSON.stringify(newRegistrations));
-  };
-
-  const sendEmail = async (registration: DemoRegistration) => {
-    // Get email template from admin settings
-    const emailSettings = JSON.parse(localStorage.getItem('demo_email_settings') || '{}');
-    const defaultTemplate = {
-      subject: 'Acesso à Demo - DataMigrate Pro',
-      content: `
-        <h2>Olá, {{nome}}!</h2>
-        <p>Obrigado por se registrar para nossa demonstração.</p>
-        <p>Seus dados de acesso:</p>
-        <ul>
-          <li><strong>Nome:</strong> {{nome}}</li>
-          <li><strong>Email:</strong> {{email}}</li>
-          <li><strong>Empresa:</strong> {{empresa}}</li>
-        </ul>
-        <p>Acesse nossa demo clicando no link abaixo:</p>
-        <a href="https://demo.datamigrate.com" style="background-color: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acessar Demo</a>
-        <p>Atenciosamente,<br>Equipe DataMigrate Pro</p>
-      `
-    };
-
-    const template = emailSettings.template || defaultTemplate;
-    
-    // Replace template variables
-    let emailContent = template.content
-      .replace(/{{nome}}/g, registration.nome)
-      .replace(/{{email}}/g, registration.email)
-      .replace(/{{empresa}}/g, registration.empresa);
-
-    console.log('Email seria enviado para:', registration.email);
-    console.log('Assunto:', template.subject);
-    console.log('Conteúdo:', emailContent);
-
-    // In a real application, you would send this email via an API
-    // For demo purposes, we'll just simulate it
-    return new Promise(resolve => setTimeout(resolve, 1000));
-  };
+  const createDemo = useCreateDemo();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
+    
     try {
-      // Create registration record
-      const registration: DemoRegistration = {
-        id: Date.now().toString(),
-        nome: formData.nome,
-        email: formData.email,
-        empresa: formData.empresa,
-        objetivo: formData.objetivo,
-        timestamp: new Date().toISOString()
-      };
-
-      // Save registration
-      saveRegistration(registration);
-
-      // Send email
-      await sendEmail(registration);
-
-      setIsRegistered(true);
-      toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Um e-mail com as informações de acesso foi enviado para você.",
-      });
+      await createDemo.mutateAsync(formData);
+      setIsSubmitted(true);
+      toast.success('Solicitação enviada com sucesso!');
     } catch (error) {
-      toast({
-        title: "Erro no cadastro",
-        description: "Houve um problema ao processar seu cadastro. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      console.error('Erro ao enviar solicitação:', error);
+      toast.error('Erro ao enviar solicitação. Tente novamente.');
     }
   };
 
-  const handleAccessDemo = () => {
-    // Aqui você pode redirecionar para o site externo
-    window.open('https://demo.datamigrate.com', '_blank');
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
+  const features = [
+    {
+      icon: <Database className="h-8 w-8 text-blue-400" />,
+      title: "Migração Completa",
+      description: "Migre dados entre diferentes sistemas de banco de dados com total integridade"
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-green-400" />,
+      title: "Segurança Avançada",
+      description: "Criptografia end-to-end e conformidade com padrões de segurança"
+    },
+    {
+      icon: <Zap className="h-8 w-8 text-yellow-400" />,
+      title: "Performance Otimizada",
+      description: "Processamento paralelo para migrações rápidas e eficientes"
+    }
+  ];
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white">
+        <Header />
+        <main className="container mx-auto px-4 py-8 mt-16">
+          <div className="text-center max-w-2xl mx-auto">
+            <CheckCircle className="h-24 w-24 text-green-400 mx-auto mb-6" />
+            <h1 className="text-4xl font-bold mb-4 text-green-400">
+              Solicitação Enviada!
+            </h1>
+            <p className="text-xl text-gray-300 mb-8">
+              Recebemos sua solicitação de demo. Nossa equipe entrará em contato em breve para agendar uma demonstração personalizada.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/'}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Voltar ao Início
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">
-              Demonstração Interativa
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Experimente nossa plataforma de migração de dados em tempo real. 
-              Veja como é simples e seguro migrar seus dados empresariais com nossa solução completa.
-            </p>
-          </div>
+      <main className="container mx-auto px-4 py-8 mt-16">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+            Solicite uma Demo
+          </h1>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Veja como nossa solução pode transformar seus processos de migração de dados
+          </p>
+        </div>
 
-          <div className="grid lg:grid-cols-2 gap-8 mb-12">
-            {/* Como usar a demo */}
-            <Card className="bg-card border-border shadow-xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Formulário */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-2xl text-white">
+                Agende sua Demonstração
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Nome Completo *
+                  </label>
+                  <Input
+                    type="text"
+                    name="nome"
+                    value={formData.nome}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="Seu nome completo"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    E-mail Corporativo *
+                  </label>
+                  <Input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="seu.email@empresa.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Empresa *
+                  </label>
+                  <Input
+                    type="text"
+                    name="empresa"
+                    value={formData.empresa}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="Nome da sua empresa"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Telefone
+                  </label>
+                  <Input
+                    type="tel"
+                    name="telefone"
+                    value={formData.telefone}
+                    onChange={handleInputChange}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Mensagem
+                  </label>
+                  <Textarea
+                    name="mensagem"
+                    value={formData.mensagem}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="Conte-nos sobre suas necessidades de migração de dados..."
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={createDemo.isPending}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {createDemo.isPending ? 'Enviando...' : 'Solicitar Demo'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Informações sobre a Demo */}
+          <div className="space-y-8">
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-2xl text-primary flex items-center gap-2">
-                  <Play className="w-6 h-6" />
-                  Como usar a Demo
+                <CardTitle className="text-2xl text-white">
+                  O que você verá na demo
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Siga estes passos simples para experimentar nossa plataforma
-                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">1</div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">Cadastre-se</h4>
-                    <p className="text-sm text-muted-foreground">Preencha o formulário ao lado com seus dados básicos</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">2</div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">Receba o E-mail</h4>
-                    <p className="text-sm text-muted-foreground">Verifique sua caixa de entrada para as informações de acesso</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">3</div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">Acesse a Demo</h4>
-                    <p className="text-sm text-muted-foreground">Clique no link do e-mail ou no botão para abrir nossa aplicação demo</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">4</div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">Explore os Recursos</h4>
-                    <p className="text-sm text-muted-foreground">Teste as funcionalidades de migração com dados simulados</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Formulário de cadastro */}
-            <Card className="bg-card border-border shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl text-primary">
-                  {isRegistered ? 'Cadastro Concluído!' : 'Acesso à Demonstração'}
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  {isRegistered 
-                    ? 'Um e-mail foi enviado com as informações de acesso'
-                    : 'Preencha seus dados para acessar a demo completa'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!isRegistered ? (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="nome">Nome Completo</Label>
-                      <Input
-                        id="nome"
-                        type="text"
-                        placeholder="Seu nome completo"
-                        value={formData.nome}
-                        onChange={(e) => handleInputChange('nome', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail Profissional</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="empresa">Nome da Empresa</Label>
-                      <Input
-                        id="empresa"
-                        type="text"
-                        placeholder="Nome da sua empresa"
-                        value={formData.empresa}
-                        onChange={(e) => handleInputChange('empresa', e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="objetivo">Principal Objetivo</Label>
-                      <Select onValueChange={(value) => handleInputChange('objetivo', value)} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione seu principal objetivo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="migracao-cloud">Migração para Cloud</SelectItem>
-                          <SelectItem value="modernizacao-db">Modernização de Database</SelectItem>
-                          <SelectItem value="backup-disaster">Backup e Disaster Recovery</SelectItem>
-                          <SelectItem value="integracao-sistemas">Integração de Sistemas</SelectItem>
-                          <SelectItem value="analytics-bi">Analytics e BI</SelectItem>
-                          <SelectItem value="compliance">Compliance e Governança</SelectItem>
-                          <SelectItem value="performance">Melhoria de Performance</SelectItem>
-                          <SelectItem value="outros">Outros</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                      disabled={isSubmitting || !formData.nome || !formData.email || !formData.empresa || !formData.objetivo}
-                    >
-                      {isSubmitting ? 'Enviando...' : 'Cadastrar e Receber Acesso'}
-                    </Button>
-                  </form>
-                ) : (
-                  <div className="space-y-6 text-center">
-                    <div className="flex justify-center">
-                      <Mail className="w-16 h-16 text-primary" />
+              <CardContent className="space-y-4">
+                {features.map((feature, index) => (
+                  <div key={index} className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      {feature.icon}
                     </div>
                     <div>
-                      <p className="text-foreground mb-2">Olá, <strong>{formData.nome}</strong>!</p>
-                      <p className="text-muted-foreground mb-4">
-                        Um e-mail foi enviado para <strong>{formData.email}</strong> com todas as informações necessárias para acessar nossa demo.
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Não recebeu o e-mail? Verifique sua caixa de spam ou entre em contato conosco.
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-300">
+                        {feature.description}
                       </p>
                     </div>
-                    <Button 
-                      onClick={handleAccessDemo}
-                      className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Acessar Demo Agora
-                    </Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recursos da plataforma */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-accent">🚀 Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Migração até 10x mais rápida</li>
-                  <li>• Processamento paralelo otimizado</li>
-                  <li>• Compressão de dados inteligente</li>
-                </ul>
+                ))}
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-accent">🔒 Segurança</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Criptografia AES-256</li>
-                  <li>• Compliance SOC2 e GDPR</li>
-                  <li>• Auditoria completa de acessos</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-accent">📊 Monitoramento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Dashboards em tempo real</li>
-                  <li>• Alertas automáticos</li>
-                  <li>• Relatórios detalhados</li>
+            <Card className="bg-gradient-to-br from-blue-900 to-purple-900 border-blue-700">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-white mb-4">
+                  Agende agora e receba:
+                </h3>
+                <ul className="space-y-2 text-gray-200">
+                  <li className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+                    Demonstração personalizada (30 min)
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+                    Análise das suas necessidades
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+                    Proposta técnica customizada
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
+                    Suporte especializado
+                  </li>
                 </ul>
               </CardContent>
             </Card>
