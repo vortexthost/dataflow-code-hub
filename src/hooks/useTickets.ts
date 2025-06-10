@@ -23,7 +23,10 @@ export const useTickets = () => {
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar tickets:', error);
+        throw error;
+      }
       return data;
     },
   });
@@ -34,17 +37,25 @@ export const useCreateTicket = () => {
   
   return useMutation({
     mutationFn: async (ticket: TicketInsert) => {
+      console.log('Tentando criar ticket:', ticket);
       const { data, error } = await supabase
         .from('tickets')
         .insert([ticket])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar ticket:', error);
+        throw error;
+      }
+      console.log('Ticket criado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de ticket:', error);
     },
   });
 };
@@ -54,6 +65,7 @@ export const useUpdateTicket = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: TicketUpdate & { id: string }) => {
+      console.log('Tentando atualizar ticket:', { id, updates });
       const { data, error } = await supabase
         .from('tickets')
         .update(updates)
@@ -61,11 +73,18 @@ export const useUpdateTicket = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar ticket:', error);
+        throw error;
+      }
+      console.log('Ticket atualizado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de atualização de ticket:', error);
     },
   });
 };

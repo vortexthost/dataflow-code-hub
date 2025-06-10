@@ -16,7 +16,10 @@ export const useUsuarios = () => {
         .select('*')
         .order('nome');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar usuários:', error);
+        throw error;
+      }
       return data;
     },
   });
@@ -27,17 +30,25 @@ export const useCreateUsuario = () => {
   
   return useMutation({
     mutationFn: async (usuario: UsuarioInsert) => {
+      console.log('Tentando criar usuário:', usuario);
       const { data, error } = await supabase
         .from('usuarios_sistema')
         .insert([usuario])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar usuário:', error);
+        throw error;
+      }
+      console.log('Usuário criado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios_sistema'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de usuário:', error);
     },
   });
 };
@@ -47,6 +58,7 @@ export const useUpdateUsuario = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: UsuarioUpdate & { id: string }) => {
+      console.log('Tentando atualizar usuário:', { id, updates });
       const { data, error } = await supabase
         .from('usuarios_sistema')
         .update(updates)
@@ -54,11 +66,18 @@ export const useUpdateUsuario = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        throw error;
+      }
+      console.log('Usuário atualizado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios_sistema'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de atualização de usuário:', error);
     },
   });
 };

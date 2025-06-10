@@ -23,7 +23,10 @@ export const useTutorials = () => {
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar tutoriais:', error);
+        throw error;
+      }
       return data;
     },
   });
@@ -34,17 +37,25 @@ export const useCreateTutorial = () => {
   
   return useMutation({
     mutationFn: async (tutorial: TutorialInsert) => {
+      console.log('Tentando criar tutorial:', tutorial);
       const { data, error } = await supabase
         .from('tutoriais')
         .insert([tutorial])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar tutorial:', error);
+        throw error;
+      }
+      console.log('Tutorial criado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tutoriais'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de tutorial:', error);
     },
   });
 };
@@ -54,6 +65,7 @@ export const useUpdateTutorial = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: TutorialUpdate & { id: string }) => {
+      console.log('Tentando atualizar tutorial:', { id, updates });
       const { data, error } = await supabase
         .from('tutoriais')
         .update(updates)
@@ -61,11 +73,18 @@ export const useUpdateTutorial = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar tutorial:', error);
+        throw error;
+      }
+      console.log('Tutorial atualizado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tutoriais'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de atualização de tutorial:', error);
     },
   });
 };
@@ -75,15 +94,23 @@ export const useDeleteTutorial = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      console.log('Tentando deletar tutorial:', id);
       const { error } = await supabase
         .from('tutoriais')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao deletar tutorial:', error);
+        throw error;
+      }
+      console.log('Tutorial deletado com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tutoriais'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de deleção de tutorial:', error);
     },
   });
 };

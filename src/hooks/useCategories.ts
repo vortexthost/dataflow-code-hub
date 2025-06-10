@@ -16,7 +16,10 @@ export const useCategories = () => {
         .select('*')
         .order('nome');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar categorias:', error);
+        throw error;
+      }
       return data;
     },
   });
@@ -27,17 +30,25 @@ export const useCreateCategory = () => {
   
   return useMutation({
     mutationFn: async (categoria: CategoriaInsert) => {
+      console.log('Tentando criar categoria:', categoria);
       const { data, error } = await supabase
         .from('categorias')
         .insert([categoria])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar categoria:', error);
+        throw error;
+      }
+      console.log('Categoria criada com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorias'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de categoria:', error);
     },
   });
 };
@@ -47,6 +58,7 @@ export const useUpdateCategory = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: CategoriaUpdate & { id: string }) => {
+      console.log('Tentando atualizar categoria:', { id, updates });
       const { data, error } = await supabase
         .from('categorias')
         .update(updates)
@@ -54,11 +66,18 @@ export const useUpdateCategory = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar categoria:', error);
+        throw error;
+      }
+      console.log('Categoria atualizada com sucesso:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorias'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de atualização de categoria:', error);
     },
   });
 };
@@ -68,15 +87,23 @@ export const useDeleteCategory = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      console.log('Tentando deletar categoria:', id);
       const { error } = await supabase
         .from('categorias')
         .delete()
         .eq('id', id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao deletar categoria:', error);
+        throw error;
+      }
+      console.log('Categoria deletada com sucesso');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorias'] });
+    },
+    onError: (error) => {
+      console.error('Erro na mutação de deleção de categoria:', error);
     },
   });
 };
