@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -18,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Edit, Trash2, Plus, Search, Tag, Image, Type, Palette, Mail, Users, Calendar } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, Search, Tag, Image, Type, Palette, Mail, Users, Calendar, UserPlus, Ticket, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 
 interface Categoria {
   id: string;
@@ -53,12 +55,45 @@ interface EmailSettings {
   };
 }
 
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  senha: string;
+  ativo: boolean;
+  criadoEm: string;
+}
+
+interface HelpdeskTicket {
+  id: string;
+  titulo: string;
+  descricao: string;
+  prioridade: 'baixa' | 'media' | 'alta' | 'urgente';
+  status: 'aberto' | 'em_andamento' | 'fechado';
+  usuarioId: string;
+  usuarioNome?: string;
+  criadoEm: string;
+  respostas: TicketResposta[];
+}
+
+interface TicketResposta {
+  id: string;
+  mensagem: string;
+  autor: string;
+  criadoEm: string;
+  isAdmin: boolean;
+}
+
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginData, setLoginData] = useState({ usuario: '', senha: '' });
   const [tutoriais, setTutoriais] = useState<Tutorial[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [demoRegistrations, setDemoRegistrations] = useState<DemoRegistration[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [helpdeskTickets, setHelpdeskTickets] = useState<HelpdeskTicket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<HelpdeskTicket | null>(null);
+  const [novaResposta, setNovaResposta] = useState('');
   const [emailSettings, setEmailSettings] = useState<EmailSettings>({
     subject: 'Acesso à Demo - DataMigrate Pro',
     template: {
@@ -86,12 +121,19 @@ const Admin = () => {
     imagem: ''
   });
   const [novaCategoria, setNovaCategoria] = useState({ nome: '', cor: '#3b82f6' });
+  const [novoUsuario, setNovoUsuario] = useState({
+    nome: '',
+    email: '',
+    senha: '',
+    ativo: true
+  });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingCategoriaId, setEditingCategoriaId] = useState<string | null>(null);
+  const [editingUsuarioId, setEditingUsuarioId] = useState<string | null>(null);
   const [expandedTutorial, setExpandedTutorial] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTutoriais, setFilteredTutoriais] = useState<Tutorial[]>([]);
-  const [activeTab, setActiveTab] = useState<'tutoriais' | 'categorias' | 'demos' | 'email'>('tutoriais');
+  const [activeTab, setActiveTab] = useState<'tutoriais' | 'categorias' | 'demos' | 'email' | 'usuarios' | 'helpdesk'>('tutoriais');
   const { toast } = useToast();
 
   const coresDisponiveis = [
@@ -108,7 +150,6 @@ const Admin = () => {
     { value: 'text-2xl', label: 'Extra Grande' }
   ];
 
-  // Configuração do React Quill
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
@@ -131,7 +172,6 @@ const Admin = () => {
     'link', 'image', 'video', 'color', 'background', 'align', 'code-block'
   ];
 
-  // Verificar se já está logado
   useEffect(() => {
     const loggedIn = localStorage.getItem('admin_logged_in');
     if (loggedIn === 'true') {
@@ -140,7 +180,6 @@ const Admin = () => {
     }
   }, []);
 
-  // Filtrar tutoriais baseado na busca
   useEffect(() => {
     let filtered = tutoriais;
     
@@ -157,12 +196,10 @@ const Admin = () => {
   }, [searchTerm, tutoriais]);
 
   const loadData = () => {
-    // Carregar categorias
     const categoriasLocal = localStorage.getItem('categorias_admin');
     if (categoriasLocal) {
       setCategorias(JSON.parse(categoriasLocal));
     } else {
-      // Categorias padrão
       const categoriasDefault: Categoria[] = [
         { id: 'db-migration', nome: 'Database Migration', cor: '#3b82f6' },
         { id: 'api-integration', nome: 'API Integration', cor: '#10b981' },
@@ -176,7 +213,6 @@ const Admin = () => {
       localStorage.setItem('categorias_admin', JSON.stringify(categoriasDefault));
     }
 
-    // Carregar tutoriais
     const tutoriaisLocal = localStorage.getItem('modelos_codigo');
     if (tutoriaisLocal) {
       const data = JSON.parse(tutoriaisLocal);
@@ -190,16 +226,32 @@ const Admin = () => {
       setTutoriais(tutoriaisConvertidos);
     }
 
-    // Carregar registros de demo
     const demoRegsLocal = localStorage.getItem('demo_registrations');
     if (demoRegsLocal) {
       setDemoRegistrations(JSON.parse(demoRegsLocal));
     }
 
-    // Carregar configurações de email
     const emailSettingsLocal = localStorage.getItem('demo_email_settings');
     if (emailSettingsLocal) {
       setEmailSettings(JSON.parse(emailSettingsLocal));
+    }
+
+    const usuariosLocal = localStorage.getItem('helpdesk_usuarios');
+    if (usuariosLocal) {
+      setUsuarios(JSON.parse(usuariosLocal));
+    }
+
+    const ticketsLocal = localStorage.getItem('helpdesk_tickets');
+    if (ticketsLocal) {
+      const tickets: HelpdeskTicket[] = JSON.parse(ticketsLocal);
+      const usuarios: Usuario[] = usuariosLocal ? JSON.parse(usuariosLocal) : [];
+      
+      const ticketsWithUserNames = tickets.map(ticket => ({
+        ...ticket,
+        usuarioNome: usuarios.find(u => u.id === ticket.usuarioId)?.nome || 'Usuário não encontrado'
+      }));
+      
+      setHelpdeskTickets(ticketsWithUserNames);
     }
   };
 
@@ -229,6 +281,157 @@ const Admin = () => {
     setLoginData({ usuario: '', senha: '' });
   };
 
+  const handleAddUsuario = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!novoUsuario.nome.trim() || !novoUsuario.email.trim() || !novoUsuario.senha.trim()) {
+      toast({
+        title: "Erro",
+        description: "Todos os campos são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailExists = usuarios.some(u => u.email === novoUsuario.email);
+    if (emailExists) {
+      toast({
+        title: "Erro",
+        description: "Já existe um usuário com este email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const usuario: Usuario = {
+      id: Date.now().toString(),
+      nome: novoUsuario.nome,
+      email: novoUsuario.email,
+      senha: novoUsuario.senha,
+      ativo: novoUsuario.ativo,
+      criadoEm: new Date().toISOString()
+    };
+
+    const novosUsuarios = [...usuarios, usuario];
+    localStorage.setItem('helpdesk_usuarios', JSON.stringify(novosUsuarios));
+    setUsuarios(novosUsuarios);
+    setNovoUsuario({ nome: '', email: '', senha: '', ativo: true });
+    
+    toast({
+      title: "Usuário adicionado!",
+      description: "Novo usuário foi criado com sucesso.",
+    });
+  };
+
+  const handleEditUsuario = (usuario: Usuario) => {
+    setNovoUsuario({
+      nome: usuario.nome,
+      email: usuario.email,
+      senha: usuario.senha,
+      ativo: usuario.ativo
+    });
+    setEditingUsuarioId(usuario.id);
+  };
+
+  const handleUpdateUsuario = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingUsuarioId) return;
+
+    const novosUsuarios = usuarios.map(usuario =>
+      usuario.id === editingUsuarioId
+        ? { 
+            ...usuario, 
+            nome: novoUsuario.nome, 
+            email: novoUsuario.email,
+            senha: novoUsuario.senha,
+            ativo: novoUsuario.ativo
+          }
+        : usuario
+    );
+
+    localStorage.setItem('helpdesk_usuarios', JSON.stringify(novosUsuarios));
+    setUsuarios(novosUsuarios);
+    setNovoUsuario({ nome: '', email: '', senha: '', ativo: true });
+    setEditingUsuarioId(null);
+    
+    toast({
+      title: "Usuário atualizado!",
+      description: "As alterações foram salvas com sucesso.",
+    });
+  };
+
+  const handleDeleteUsuario = (id: string) => {
+    const novosUsuarios = usuarios.filter(usuario => usuario.id !== id);
+    localStorage.setItem('helpdesk_usuarios', JSON.stringify(novosUsuarios));
+    setUsuarios(novosUsuarios);
+    
+    toast({
+      title: "Usuário removido!",
+      description: "O usuário foi excluído com sucesso.",
+    });
+  };
+
+  const handleTicketStatusChange = (ticketId: string, newStatus: string) => {
+    const ticketsLocal = localStorage.getItem('helpdesk_tickets');
+    if (!ticketsLocal) return;
+
+    const allTickets: HelpdeskTicket[] = JSON.parse(ticketsLocal);
+    const updatedTickets = allTickets.map(ticket =>
+      ticket.id === ticketId ? { ...ticket, status: newStatus as any } : ticket
+    );
+
+    localStorage.setItem('helpdesk_tickets', JSON.stringify(updatedTickets));
+    loadData();
+    
+    toast({
+      title: "Status atualizado!",
+      description: "O status do ticket foi alterado.",
+    });
+  };
+
+  const handleAddAdminResposta = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!novaResposta.trim() || !selectedTicket) return;
+
+    const resposta: TicketResposta = {
+      id: Date.now().toString(),
+      mensagem: novaResposta,
+      autor: 'Administrador',
+      criadoEm: new Date().toISOString(),
+      isAdmin: true
+    };
+
+    const ticketsLocal = localStorage.getItem('helpdesk_tickets');
+    const allTickets: HelpdeskTicket[] = ticketsLocal ? JSON.parse(ticketsLocal) : [];
+    
+    const updatedTickets = allTickets.map(ticket => 
+      ticket.id === selectedTicket.id 
+        ? { ...ticket, respostas: [...ticket.respostas, resposta] }
+        : ticket
+    );
+    
+    localStorage.setItem('helpdesk_tickets', JSON.stringify(updatedTickets));
+    loadData();
+    
+    const updatedTicket = updatedTickets.find(t => t.id === selectedTicket.id);
+    if (updatedTicket) {
+      const usuarios: Usuario[] = JSON.parse(localStorage.getItem('helpdesk_usuarios') || '[]');
+      setSelectedTicket({
+        ...updatedTicket,
+        usuarioNome: usuarios.find(u => u.id === updatedTicket.usuarioId)?.nome || 'Usuário não encontrado'
+      });
+    }
+    
+    setNovaResposta('');
+    
+    toast({
+      title: "Resposta adicionada!",
+      description: "Sua resposta foi enviada ao usuário.",
+    });
+  };
+
   const saveTutoriais = (novosTutoriais: Tutorial[]) => {
     localStorage.setItem('modelos_codigo', JSON.stringify(novosTutoriais));
     setTutoriais(novosTutoriais);
@@ -239,7 +442,6 @@ const Admin = () => {
     setCategorias(novasCategorias);
   };
 
-  // New function to save email settings
   const saveEmailSettings = (settings: EmailSettings) => {
     localStorage.setItem('demo_email_settings', JSON.stringify(settings));
     setEmailSettings(settings);
@@ -267,6 +469,34 @@ const Admin = () => {
 
   const formatDate = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('pt-BR');
+  };
+
+  const getPrioridadeColor = (prioridade: string) => {
+    switch (prioridade) {
+      case 'baixa': return 'bg-green-100 text-green-800';
+      case 'media': return 'bg-yellow-100 text-yellow-800';
+      case 'alta': return 'bg-orange-100 text-orange-800';
+      case 'urgente': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'aberto': return 'bg-blue-100 text-blue-800';
+      case 'em_andamento': return 'bg-yellow-100 text-yellow-800';
+      case 'fechado': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'aberto': return <Ticket className="w-4 h-4" />;
+      case 'em_andamento': return <Clock className="w-4 h-4" />;
+      case 'fechado': return <CheckCircle className="w-4 h-4" />;
+      default: return <Ticket className="w-4 h-4" />;
+    }
   };
 
   const handleAddCategoria = (e: React.FormEvent) => {
@@ -428,12 +658,16 @@ const Admin = () => {
     setEditingCategoriaId(null);
   };
 
+  const cancelEditUsuario = () => {
+    setNovoUsuario({ nome: '', email: '', senha: '', ativo: true });
+    setEditingUsuarioId(null);
+  };
+
   const toggleExpanded = (id: number) => {
     setExpandedTutorial(expandedTutorial === id ? null : id);
   };
 
   const getPreviewContent = (conteudo: string, maxLines: number = 3) => {
-    // Remove HTML tags for preview
     const textContent = conteudo.replace(/<[^>]*>/g, '');
     const lines = textContent.split('\n');
     if (lines.length <= maxLines) return textContent;
@@ -501,6 +735,133 @@ const Admin = () => {
     );
   }
 
+  if (selectedTicket) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        
+        <main className="container mx-auto px-4 py-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-4xl font-bold text-foreground">Detalhes do Projeto</h1>
+              <div className="flex gap-2">
+                <Button onClick={() => setSelectedTicket(null)} variant="outline">
+                  Voltar
+                </Button>
+                <Button onClick={handleLogout} variant="outline">
+                  Logout
+                </Button>
+              </div>
+            </div>
+
+            <Card className="shadow-lg bg-card border-border mb-6">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-xl text-primary">{selectedTicket.titulo}</CardTitle>
+                    <CardDescription className="mt-2">
+                      Por: {selectedTicket.usuarioNome} - Criado em {formatDate(selectedTicket.criadoEm)}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2 flex-col">
+                    <div className="flex gap-2">
+                      <Badge className={getPrioridadeColor(selectedTicket.prioridade)}>
+                        {selectedTicket.prioridade}
+                      </Badge>
+                      <Badge className={getStatusColor(selectedTicket.status)}>
+                        <div className="flex items-center gap-1">
+                          {getStatusIcon(selectedTicket.status)}
+                          {selectedTicket.status.replace('_', ' ')}
+                        </div>
+                      </Badge>
+                    </div>
+                    <Select 
+                      value={selectedTicket.status} 
+                      onValueChange={(value) => handleTicketStatusChange(selectedTicket.id, value)}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="aberto">Aberto</SelectItem>
+                        <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                        <SelectItem value="fechado">Fechado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-foreground whitespace-pre-wrap">{selectedTicket.descricao}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg bg-card border-border mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg text-primary flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Conversas ({selectedTicket.respostas.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedTicket.respostas.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">
+                    Nenhuma conversa ainda
+                  </p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {selectedTicket.respostas.map((resposta) => (
+                      <div 
+                        key={resposta.id}
+                        className={`p-4 rounded-lg ${
+                          resposta.isAdmin 
+                            ? 'bg-blue-50 border-l-4 border-blue-500' 
+                            : 'bg-gray-50 border-l-4 border-gray-300'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-foreground">
+                            {resposta.autor} {resposta.isAdmin && '(Administrador)'}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(resposta.criadoEm)}
+                          </span>
+                        </div>
+                        <p className="text-foreground whitespace-pre-wrap">{resposta.mensagem}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-lg bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-lg text-primary">Responder como Administrador</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddAdminResposta} className="space-y-4">
+                  <Textarea
+                    value={novaResposta}
+                    onChange={(e) => setNovaResposta(e.target.value)}
+                    placeholder="Digite sua resposta..."
+                    rows={4}
+                  />
+                  <Button type="submit" className="bg-primary hover:bg-primary/90">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Enviar Resposta
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -514,8 +875,7 @@ const Admin = () => {
             </Button>
           </div>
 
-          {/* Tabs Navigation */}
-          <div className="flex space-x-4 mb-8">
+          <div className="flex space-x-4 mb-8 flex-wrap">
             <Button
               onClick={() => setActiveTab('tutoriais')}
               variant={activeTab === 'tutoriais' ? 'default' : 'outline'}
@@ -548,11 +908,262 @@ const Admin = () => {
               <Mail className="w-4 h-4" />
               E-mail
             </Button>
+            <Button
+              onClick={() => setActiveTab('usuarios')}
+              variant={activeTab === 'usuarios' ? 'default' : 'outline'}
+              className="flex items-center gap-2"
+            >
+              <UserPlus className="w-4 h-4" />
+              Usuários ({usuarios.length})
+            </Button>
+            <Button
+              onClick={() => setActiveTab('helpdesk')}
+              variant={activeTab === 'helpdesk' ? 'default' : 'outline'}
+              className="flex items-center gap-2"
+            >
+              <Ticket className="w-4 h-4" />
+              Projetos ({helpdeskTickets.length})
+            </Button>
           </div>
+
+          {activeTab === 'usuarios' && (
+            <div className="grid xl:grid-cols-3 gap-8">
+              <div className="xl:col-span-1">
+                <Card className="shadow-lg bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-primary">
+                      {editingUsuarioId ? 'Editar Usuário' : 'Adicionar Novo Usuário'}
+                    </CardTitle>
+                    <CardDescription>
+                      {editingUsuarioId ? 'Modifique os campos abaixo' : 'Crie um novo usuário para acessar os projetos'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={editingUsuarioId ? handleUpdateUsuario : handleAddUsuario} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="nomeUsuario">Nome</Label>
+                        <Input
+                          id="nomeUsuario"
+                          type="text"
+                          value={novoUsuario.nome}
+                          onChange={(e) => setNovoUsuario(prev => ({ ...prev, nome: e.target.value }))}
+                          placeholder="Ex: João Silva"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="emailUsuario">Email</Label>
+                        <Input
+                          id="emailUsuario"
+                          type="email"
+                          value={novoUsuario.email}
+                          onChange={(e) => setNovoUsuario(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="Ex: joao@empresa.com"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="senhaUsuario">Senha</Label>
+                        <Input
+                          id="senhaUsuario"
+                          type="password"
+                          value={novoUsuario.senha}
+                          onChange={(e) => setNovoUsuario(prev => ({ ...prev, senha: e.target.value }))}
+                          placeholder="Digite a senha"
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="ativoUsuario"
+                          checked={novoUsuario.ativo}
+                          onCheckedChange={(checked) => setNovoUsuario(prev => ({ ...prev, ativo: checked }))}
+                        />
+                        <Label htmlFor="ativoUsuario">Usuário ativo</Label>
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <Button 
+                          type="submit" 
+                          className="flex-1 bg-primary hover:bg-primary/90"
+                        >
+                          {editingUsuarioId ? 'Atualizar Usuário' : 'Adicionar Usuário'}
+                        </Button>
+                        
+                        {editingUsuarioId && (
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={cancelEditUsuario}
+                            className="flex-1"
+                          >
+                            Cancelar
+                          </Button>
+                        )}
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="xl:col-span-2">
+                <Card className="shadow-lg bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-primary">Usuários Cadastrados</CardTitle>
+                    <CardDescription>
+                      Gerencie os usuários do sistema ({usuarios.length} total)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {usuarios.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">
+                        Nenhum usuário cadastrado ainda
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nome</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Criado em</TableHead>
+                              <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {usuarios.map((usuario) => (
+                              <TableRow key={usuario.id}>
+                                <TableCell className="font-medium">
+                                  {usuario.nome}
+                                </TableCell>
+                                <TableCell>
+                                  {usuario.email}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={usuario.ativo ? "default" : "secondary"}>
+                                    {usuario.ativo ? 'Ativo' : 'Inativo'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {formatDate(usuario.criadoEm)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end space-x-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditUsuario(usuario)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleDeleteUsuario(usuario.id)}
+                                      className="h-8 w-8 p-0 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'helpdesk' && (
+            <Card className="shadow-lg bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-xl text-primary flex items-center gap-2">
+                  <Ticket className="w-5 h-5" />
+                  Projetos (HelpDesk)
+                </CardTitle>
+                <CardDescription>
+                  Visualize e responda aos projetos dos usuários ({helpdeskTickets.length} total)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {helpdeskTickets.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Nenhum projeto criado ainda
+                  </p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Título</TableHead>
+                          <TableHead>Usuário</TableHead>
+                          <TableHead>Prioridade</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead>Respostas</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {helpdeskTickets.map((ticket) => (
+                          <TableRow key={ticket.id}>
+                            <TableCell className="font-medium">
+                              {ticket.titulo}
+                            </TableCell>
+                            <TableCell>
+                              {ticket.usuarioNome}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getPrioridadeColor(ticket.prioridade)}>
+                                {ticket.prioridade}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(ticket.status)}>
+                                <div className="flex items-center gap-1">
+                                  {getStatusIcon(ticket.status)}
+                                  {ticket.status.replace('_', ' ')}
+                                </div>
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(ticket.criadoEm)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {ticket.respostas.length}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedTicket(ticket)}
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                Ver Detalhes
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {activeTab === 'tutoriais' && (
             <div className="space-y-8">
-              {/* Formulário para adicionar/editar tutorial - Full Width */}
               <Card className="shadow-lg bg-card border-border">
                 <CardHeader>
                   <CardTitle className="text-xl text-primary">
@@ -644,7 +1255,6 @@ const Admin = () => {
                 </CardContent>
               </Card>
 
-              {/* Lista de tutoriais existentes */}
               <Card className="shadow-lg bg-card border-border">
                 <CardHeader>
                   <CardTitle className="text-xl text-primary">Tutoriais Cadastrados</CardTitle>
