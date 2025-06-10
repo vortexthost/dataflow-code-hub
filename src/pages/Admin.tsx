@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, Edit, Trash2, Plus, Search, Tag, Image, Type, Palette } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, Search, Tag, Image, Type, Palette, Mail, Users, Calendar } from 'lucide-react';
 
 interface Categoria {
   id: string;
@@ -36,11 +36,47 @@ interface Tutorial {
   imagem?: string;
 }
 
+interface DemoRegistration {
+  id: string;
+  nome: string;
+  email: string;
+  empresa: string;
+  objetivo: string;
+  timestamp: string;
+}
+
+interface EmailSettings {
+  subject: string;
+  template: {
+    subject: string;
+    content: string;
+  };
+}
+
 const Admin = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginData, setLoginData] = useState({ usuario: '', senha: '' });
   const [tutoriais, setTutoriais] = useState<Tutorial[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [demoRegistrations, setDemoRegistrations] = useState<DemoRegistration[]>([]);
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({
+    subject: 'Acesso à Demo - DataMigrate Pro',
+    template: {
+      subject: 'Acesso à Demo - DataMigrate Pro',
+      content: `<h2>Olá, {{nome}}!</h2>
+<p>Obrigado por se registrar para nossa demonstração.</p>
+<p>Seus dados de acesso:</p>
+<ul>
+  <li><strong>Nome:</strong> {{nome}}</li>
+  <li><strong>Email:</strong> {{email}}</li>
+  <li><strong>Empresa:</strong> {{empresa}}</li>
+</ul>
+<p>Acesse nossa demo clicando no link abaixo:</p>
+<a href="https://demo.datamigrate.com" style="background-color: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acessar Demo</a>
+<p>Atenciosamente,<br>Equipe DataMigrate Pro</p>`
+    }
+  });
+  
   const [novoTutorial, setNovoTutorial] = useState({ 
     titulo: '', 
     conteudo: '', 
@@ -55,7 +91,7 @@ const Admin = () => {
   const [expandedTutorial, setExpandedTutorial] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTutoriais, setFilteredTutoriais] = useState<Tutorial[]>([]);
-  const [activeTab, setActiveTab] = useState<'tutoriais' | 'categorias'>('tutoriais');
+  const [activeTab, setActiveTab] = useState<'tutoriais' | 'categorias' | 'demos' | 'email'>('tutoriais');
   const { toast } = useToast();
 
   const coresDisponiveis = [
@@ -153,6 +189,18 @@ const Admin = () => {
       }));
       setTutoriais(tutoriaisConvertidos);
     }
+
+    // Carregar registros de demo
+    const demoRegsLocal = localStorage.getItem('demo_registrations');
+    if (demoRegsLocal) {
+      setDemoRegistrations(JSON.parse(demoRegsLocal));
+    }
+
+    // Carregar configurações de email
+    const emailSettingsLocal = localStorage.getItem('demo_email_settings');
+    if (emailSettingsLocal) {
+      setEmailSettings(JSON.parse(emailSettingsLocal));
+    }
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -189,6 +237,36 @@ const Admin = () => {
   const saveCategorias = (novasCategorias: Categoria[]) => {
     localStorage.setItem('categorias_admin', JSON.stringify(novasCategorias));
     setCategorias(novasCategorias);
+  };
+
+  // New function to save email settings
+  const saveEmailSettings = (settings: EmailSettings) => {
+    localStorage.setItem('demo_email_settings', JSON.stringify(settings));
+    setEmailSettings(settings);
+  };
+
+  const handleSaveEmailSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveEmailSettings(emailSettings);
+    toast({
+      title: "Configurações salvas!",
+      description: "As configurações de e-mail foram atualizadas.",
+    });
+  };
+
+  const handleDeleteDemoRegistration = (id: string) => {
+    const updatedRegistrations = demoRegistrations.filter(reg => reg.id !== id);
+    setDemoRegistrations(updatedRegistrations);
+    localStorage.setItem('demo_registrations', JSON.stringify(updatedRegistrations));
+    
+    toast({
+      title: "Registro removido!",
+      description: "O registro da demo foi excluído com sucesso.",
+    });
+  };
+
+  const formatDate = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString('pt-BR');
   };
 
   const handleAddCategoria = (e: React.FormEvent) => {
@@ -453,6 +531,22 @@ const Admin = () => {
             >
               <Tag className="w-4 h-4" />
               Categorias
+            </Button>
+            <Button
+              onClick={() => setActiveTab('demos')}
+              variant={activeTab === 'demos' ? 'default' : 'outline'}
+              className="flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" />
+              Demos ({demoRegistrations.length})
+            </Button>
+            <Button
+              onClick={() => setActiveTab('email')}
+              variant={activeTab === 'email' ? 'default' : 'outline'}
+              className="flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              E-mail
             </Button>
           </div>
 
@@ -810,6 +904,145 @@ const Admin = () => {
                 </Card>
               </div>
             </div>
+          )}
+
+          {activeTab === 'demos' && (
+            <Card className="shadow-lg bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-xl text-primary flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Registros de Demo
+                </CardTitle>
+                <CardDescription>
+                  Visualize e gerencie todos os registros de demonstração ({demoRegistrations.length} total)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {demoRegistrations.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Nenhum registro de demo ainda
+                  </p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Empresa</TableHead>
+                          <TableHead>Objetivo</TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {demoRegistrations.map((registration) => (
+                          <TableRow key={registration.id}>
+                            <TableCell className="font-medium">
+                              {registration.nome}
+                            </TableCell>
+                            <TableCell>
+                              {registration.email}
+                            </TableCell>
+                            <TableCell>
+                              {registration.empresa}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {registration.objetivo}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(registration.timestamp)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteDemoRegistration(registration.id)}
+                                className="h-8 w-8 p-0 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'email' && (
+            <Card className="shadow-lg bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-xl text-primary flex items-center gap-2">
+                  <Mail className="w-5 h-5" />
+                  Configurações de E-mail
+                </CardTitle>
+                <CardDescription>
+                  Configure o modelo de e-mail enviado aos usuários que se registram para a demo
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveEmailSettings} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="emailSubject">Assunto do E-mail</Label>
+                    <Input
+                      id="emailSubject"
+                      type="text"
+                      value={emailSettings.template.subject}
+                      onChange={(e) => setEmailSettings(prev => ({
+                        ...prev,
+                        template: { ...prev.template, subject: e.target.value }
+                      }))}
+                      placeholder="Ex: Acesso à Demo - DataMigrate Pro"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="emailContent">Conteúdo do E-mail</Label>
+                    <div className="border rounded-lg">
+                      <ReactQuill
+                        theme="snow"
+                        value={emailSettings.template.content}
+                        onChange={(value) => setEmailSettings(prev => ({
+                          ...prev,
+                          template: { ...prev.template, content: value }
+                        }))}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="Escreva o conteúdo do e-mail aqui..."
+                        style={{ 
+                          minHeight: '300px',
+                          backgroundColor: 'white'
+                        }}
+                      />
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p className="mb-2">Use as seguintes variáveis no template:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li><code>{'{{nome}}'}</code> - Nome do usuário</li>
+                        <li><code>{'{{email}}'}</code> - E-mail do usuário</li>
+                        <li><code>{'{{empresa}}'}</code> - Nome da empresa</li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    Salvar Configurações
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           )}
         </div>
       </main>

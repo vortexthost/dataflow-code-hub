@@ -8,7 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, Play, ExternalLink } from 'lucide-react';
+import { CheckCircle, Play, ExternalLink, Mail } from 'lucide-react';
+
+interface DemoRegistration {
+  id: string;
+  nome: string;
+  email: string;
+  empresa: string;
+  objetivo: string;
+  timestamp: string;
+}
 
 const Demo = () => {
   const [formData, setFormData] = useState({
@@ -28,24 +37,89 @@ const Demo = () => {
     }));
   };
 
+  const saveRegistration = (registration: DemoRegistration) => {
+    const existingRegistrations = JSON.parse(localStorage.getItem('demo_registrations') || '[]');
+    const newRegistrations = [...existingRegistrations, registration];
+    localStorage.setItem('demo_registrations', JSON.stringify(newRegistrations));
+  };
+
+  const sendEmail = async (registration: DemoRegistration) => {
+    // Get email template from admin settings
+    const emailSettings = JSON.parse(localStorage.getItem('demo_email_settings') || '{}');
+    const defaultTemplate = {
+      subject: 'Acesso à Demo - DataMigrate Pro',
+      content: `
+        <h2>Olá, {{nome}}!</h2>
+        <p>Obrigado por se registrar para nossa demonstração.</p>
+        <p>Seus dados de acesso:</p>
+        <ul>
+          <li><strong>Nome:</strong> {{nome}}</li>
+          <li><strong>Email:</strong> {{email}}</li>
+          <li><strong>Empresa:</strong> {{empresa}}</li>
+        </ul>
+        <p>Acesse nossa demo clicando no link abaixo:</p>
+        <a href="https://demo.datamigrate.com" style="background-color: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acessar Demo</a>
+        <p>Atenciosamente,<br>Equipe DataMigrate Pro</p>
+      `
+    };
+
+    const template = emailSettings.template || defaultTemplate;
+    
+    // Replace template variables
+    let emailContent = template.content
+      .replace(/{{nome}}/g, registration.nome)
+      .replace(/{{email}}/g, registration.email)
+      .replace(/{{empresa}}/g, registration.empresa);
+
+    console.log('Email seria enviado para:', registration.email);
+    console.log('Assunto:', template.subject);
+    console.log('Conteúdo:', emailContent);
+
+    // In a real application, you would send this email via an API
+    // For demo purposes, we'll just simulate it
+    return new Promise(resolve => setTimeout(resolve, 1000));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simular registro
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // Create registration record
+      const registration: DemoRegistration = {
+        id: Date.now().toString(),
+        nome: formData.nome,
+        email: formData.email,
+        empresa: formData.empresa,
+        objetivo: formData.objetivo,
+        timestamp: new Date().toISOString()
+      };
+
+      // Save registration
+      saveRegistration(registration);
+
+      // Send email
+      await sendEmail(registration);
+
       setIsRegistered(true);
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Agora você pode acessar nossa aplicação demo.",
+        description: "Um e-mail com as informações de acesso foi enviado para você.",
       });
-    }, 2000);
+    } catch (error) {
+      toast({
+        title: "Erro no cadastro",
+        description: "Houve um problema ao processar seu cadastro. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAccessDemo = () => {
     // Aqui você pode redirecionar para o site externo
-    window.open('https://demo.seuapp.com', '_blank');
+    window.open('https://demo.datamigrate.com', '_blank');
   };
 
   return (
@@ -87,22 +161,22 @@ const Demo = () => {
                 <div className="flex items-start space-x-4">
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">2</div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Acesse a Demo</h4>
-                    <p className="text-sm text-muted-foreground">Clique no botão para abrir nossa aplicação demo</p>
+                    <h4 className="font-semibold text-foreground">Receba o E-mail</h4>
+                    <p className="text-sm text-muted-foreground">Verifique sua caixa de entrada para as informações de acesso</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">3</div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Explore os Recursos</h4>
-                    <p className="text-sm text-muted-foreground">Teste as funcionalidades de migração com dados simulados</p>
+                    <h4 className="font-semibold text-foreground">Acesse a Demo</h4>
+                    <p className="text-sm text-muted-foreground">Clique no link do e-mail ou no botão para abrir nossa aplicação demo</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">4</div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Monitore o Progresso</h4>
-                    <p className="text-sm text-muted-foreground">Acompanhe a migração em tempo real com nossos dashboards</p>
+                    <h4 className="font-semibold text-foreground">Explore os Recursos</h4>
+                    <p className="text-sm text-muted-foreground">Teste as funcionalidades de migração com dados simulados</p>
                   </div>
                 </div>
               </CardContent>
@@ -116,7 +190,7 @@ const Demo = () => {
                 </CardTitle>
                 <CardDescription className="text-muted-foreground">
                   {isRegistered 
-                    ? 'Agora você pode acessar nossa aplicação demo'
+                    ? 'Um e-mail foi enviado com as informações de acesso'
                     : 'Preencha seus dados para acessar a demo completa'
                   }
                 </CardDescription>
@@ -184,18 +258,21 @@ const Demo = () => {
                       className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                       disabled={isSubmitting || !formData.nome || !formData.email || !formData.empresa || !formData.objetivo}
                     >
-                      {isSubmitting ? 'Cadastrando...' : 'Cadastrar e Acessar Demo'}
+                      {isSubmitting ? 'Enviando...' : 'Cadastrar e Receber Acesso'}
                     </Button>
                   </form>
                 ) : (
                   <div className="space-y-6 text-center">
                     <div className="flex justify-center">
-                      <CheckCircle className="w-16 h-16 text-accent" />
+                      <Mail className="w-16 h-16 text-primary" />
                     </div>
                     <div>
                       <p className="text-foreground mb-2">Olá, <strong>{formData.nome}</strong>!</p>
-                      <p className="text-muted-foreground">
-                        Seu acesso foi liberado. Clique no botão abaixo para experimentar nossa plataforma.
+                      <p className="text-muted-foreground mb-4">
+                        Um e-mail foi enviado para <strong>{formData.email}</strong> com todas as informações necessárias para acessar nossa demo.
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Não recebeu o e-mail? Verifique sua caixa de spam ou entre em contato conosco.
                       </p>
                     </div>
                     <Button 
@@ -203,7 +280,7 @@ const Demo = () => {
                       className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Acessar Aplicação Demo
+                      Acessar Demo Agora
                     </Button>
                   </div>
                 )}

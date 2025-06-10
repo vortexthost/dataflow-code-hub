@@ -108,7 +108,7 @@ const Tutoriais = () => {
       <Header />
       
       <main className="container mx-auto px-4 py-16">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-foreground mb-4">
               Tutoriais de Migração de Dados
@@ -123,7 +123,7 @@ const Tutoriais = () => {
           <Card className="mb-8 shadow-lg bg-card border-border">
             <CardHeader>
               <CardTitle className="text-xl text-primary">Buscar Tutoriais</CardTitle>
-              <CardDescription>
+              <CardDescription className="text-card-foreground/70">
                 Use os filtros abaixo para encontrar o tutorial que você precisa
               </CardDescription>
             </CardHeader>
@@ -185,7 +185,7 @@ const Tutoriais = () => {
             </CardContent>
           </Card>
 
-          {/* Lista de Tutoriais */}
+          {/* Lista de Tutoriais em 2 colunas */}
           {filteredTutoriais.length === 0 ? (
             <Card className="text-center py-12 shadow-lg bg-card border-border">
               <CardContent>
@@ -193,29 +193,28 @@ const Tutoriais = () => {
                   {hasActiveFilters ? (
                     <>
                       <Search className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <h3 className="text-xl font-semibold mb-2">Nenhum tutorial encontrado</h3>
-                      <p>Tente ajustar os filtros de busca ou limpar os filtros ativos.</p>
+                      <h3 className="text-xl font-semibold mb-2 text-card-foreground">Nenhum tutorial encontrado</h3>
+                      <p className="text-card-foreground/70">Tente ajustar os filtros de busca ou limpar os filtros ativos.</p>
                     </>
                   ) : (
                     <>
-                      <h3 className="text-xl font-semibold mb-2">Nenhum tutorial disponível</h3>
-                      <p>Em breve adicionaremos tutoriais aqui.</p>
+                      <h3 className="text-xl font-semibold mb-2 text-card-foreground">Nenhum tutorial disponível</h3>
+                      <p className="text-card-foreground/70">Em breve adicionaremos tutoriais aqui.</p>
                     </>
                   )}
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {filteredTutoriais.map((tutorial) => (
                 <Card key={tutorial.id} className="shadow-lg bg-card border-border hover:shadow-xl transition-shadow">
                   <CardHeader>
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
                         <CardTitle 
-                          className="text-xl mb-2"
+                          className="text-xl mb-2 text-card-foreground"
                           style={{ 
-                            color: tutorial.cor || 'inherit',
                             fontSize: tutorial.tamanhoFonte === 'text-lg' ? '1.125rem' : 
                                      tutorial.tamanhoFonte === 'text-xl' ? '1.25rem' : 
                                      tutorial.tamanhoFonte === 'text-2xl' ? '1.5rem' : '1rem'
@@ -248,12 +247,12 @@ const Tutoriais = () => {
                         </DialogTrigger>
                         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                           <DialogHeader>
-                            <DialogTitle className="text-xl mb-4">{tutorial.titulo}</DialogTitle>
+                            <DialogTitle className="text-xl mb-4 text-foreground">{tutorial.titulo}</DialogTitle>
                           </DialogHeader>
-                          <div className="prose max-w-none">
+                          <div className="prose max-w-none prose-invert">
                             <div 
                               dangerouslySetInnerHTML={{ __html: tutorial.conteudo }}
-                              className="text-sm"
+                              className="text-sm text-foreground"
                             />
                           </div>
                         </DialogContent>
